@@ -10,6 +10,7 @@
   :depends-on (#:defstar
                #:sketch
                #:sb-cga
+               #:cl-strings
                #:cl-arrows)
 
   :serial t
@@ -21,5 +22,5 @@
     :components ((:file "utils")
                  (:file "fps")
                  (:file "grid")
-                 (:file "demo")
-                 ))))
+                 (:file "generation")
+                 (:file "demo")))))

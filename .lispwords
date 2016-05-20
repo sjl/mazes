@@ -1,2 +1,3 @@
 (1 scancode-case)
 (1 make-sketch)
+(2 grid-loop-cells grid-loop-rows)

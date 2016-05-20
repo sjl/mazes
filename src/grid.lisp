@@ -30,8 +30,22 @@
   (cell-unlink% cell1 cell2)
   (cell-unlink% cell2 cell1))
 
+
 (defun cell-linked-p (cell other)
   (member other (cell-links cell)))
+
+(defun cell-linked-north-p (cell)
+  (cell-linked-p cell (cell-north cell)))
+
+(defun cell-linked-south-p (cell)
+  (cell-linked-p cell (cell-south cell)))
+
+(defun cell-linked-east-p (cell)
+  (cell-linked-p cell (cell-east cell)))
+
+(defun cell-linked-west-p (cell)
+  (cell-linked-p cell (cell-west cell)))
+
 
 (defun cell-neighbors (cell)
   (with-slots (north south east west) cell
@@ -78,6 +92,14 @@
                             :displaced-index-offset
                             (array-row-major-index cells row 0))))))
 
+(defmacro grid-loop-cells (cell-symbol grid &body body)
+  `(grid-map-cells (lambda (,cell-symbol) ,@body)
+    ,grid))
+
+(defmacro grid-loop-rows (row-symbol grid &body body)
+  `(grid-map-rows (lambda (,row-symbol) ,@body)
+    ,grid))
+
 
 (defun grid-size (grid)
   (* (grid-rows grid) (grid-cols grid)))
@@ -106,11 +128,26 @@
                         (make-cell r c)))))))
 
 (defmethod grid-configure-cells ((grid grid))
-  (grid-map-cells
-    (lambda (cell)
-      (with-slots (row col north south east west) cell
-        (setf north (grid-ref grid (1- row) col)
-              south (grid-ref grid (1+ row) col)
-              west (grid-ref grid row (1- col))
-              east (grid-ref grid row (1+ col)))))
-    (grid-cells grid)))
+  (grid-loop-cells cell grid
+    (with-slots (row col north south east west) cell
+      (setf north (grid-ref grid (1- row) col)
+            south (grid-ref grid (1+ row) col)
+            west (grid-ref grid row (1- col))
+            east (grid-ref grid row (1+ col))))))
+
+
+(defmethod print-object ((grid grid) stream)
+  (print-unreadable-object
+      (grid stream :type t :identity nil)
+    (format stream "~%+~A~%"
+            (cl-strings:repeat "---+" (grid-cols grid)))
+    (grid-loop-rows row grid
+      (let ((top "|")
+            (bottom "+"))
+        (loop :for contents :across row
+              :for cell = (or contents (make-cell -1 -1))
+              :for cell-top = (if (cell-linked-east-p cell) "    " "   |")
+              :for cell-bot = (if (cell-linked-south-p cell) "   +" "---+")
+              :do (setf top (cl-strings:insert cell-top top)
+                        bottom (cl-strings:insert cell-bot bottom)))
+        (format stream "~A~%~A~%" top bottom)))))
