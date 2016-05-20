@@ -135,4 +135,7 @@
 
 
 ;;;; Run
+(defparameter g (make-grid 7 5))
+(gen-binary-tree g)
+
 ; (defparameter *demo* (make-instance 'demo))

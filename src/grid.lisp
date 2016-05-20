@@ -49,7 +49,7 @@
 
 (defun cell-neighbors (cell)
   (with-slots (north south east west) cell
-    (remove-if #'null (list north south east west))))
+    (full-list north south east west)))
 
 
 (defmethod print-object ((cell cell) stream)

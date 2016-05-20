@@ -6,7 +6,9 @@
   (:export
     #:dividesp
     #:in-context
+    #:random-elt
     #:zap%
+    #:full-list
     #:%))
 
 (defpackage #:mazes.fps
@@ -35,12 +37,18 @@
     #:cell-linked-east-p
     #:cell-linked-west-p
     #:cell-neighbors
+    #:cell-north
+    #:cell-south
+    #:cell-east
+    #:cell-west
     #:grid
     #:grid-ref
     #:make-grid
     #:grid-size
     #:grid-map-cells
     #:grid-map-rows
+    #:grid-loop-cells
+    #:grid-loop-rows
     #:grid-size
     #:grid-random-cell))
 
@@ -49,13 +57,16 @@
     #:cl
     #:mazes.quickutils
     #:mazes.utils
-    #:mazes.grid))
+    #:mazes.grid)
+  (:export
+    #:gen-binary-tree))
 
 (defpackage #:mazes.demo
   (:use
     #:cl
     #:sketch
     #:mazes.grid
+    #:mazes.generation
     #:mazes.quickutils
     #:mazes.utils
     #:mazes.fps))
