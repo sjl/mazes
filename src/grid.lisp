@@ -93,8 +93,11 @@
                             (array-row-major-index cells row 0))))))
 
 (defmacro grid-loop-cells (cell-symbol grid &body body)
-  `(grid-map-cells (lambda (,cell-symbol) ,@body)
-    ,grid))
+  (with-gensyms (i)
+    (once-only (grid)
+      `(loop :for ,i :from 0 :below (array-total-size (grid-cells ,grid))
+        :for ,cell-symbol = (row-major-aref (grid-cells ,grid) ,i)
+        :do (progn ,@body)))))
 
 (defmacro grid-loop-rows (row-symbol grid &body body)
   `(grid-map-rows (lambda (,row-symbol) ,@body)

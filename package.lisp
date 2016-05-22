@@ -41,7 +41,12 @@
     #:cell-south
     #:cell-east
     #:cell-west
+    #:cell-col
+    #:cell-row
     #:grid
+    #:grid-cols
+    #:grid-rows
+    #:grid-cells
     #:grid-ref
     #:make-grid
     #:grid-size
@@ -59,7 +64,12 @@
     #:mazes.utils
     #:mazes.grid)
   (:export
-    #:gen-binary-tree))
+    #:binary-tree
+    #:binary-tree-generator)
+  (:import-from #:snakes
+    #:defgenerator
+    #:do-generator
+    #:yield))
 
 (defpackage #:mazes.demo
   (:use

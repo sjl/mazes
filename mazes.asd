@@ -10,6 +10,7 @@
   :depends-on (#:defstar
                #:sketch
                #:sb-cga
+               #:snakes
                #:cl-strings
                #:cl-arrows)
 

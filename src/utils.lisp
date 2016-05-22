@@ -43,5 +43,7 @@
       (values nil nil)
       (values (elt seq (random length)) t))))
 
+
 (defun full-list (&rest args)
   (remove-if #'null args))
+

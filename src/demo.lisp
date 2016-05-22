@@ -1,8 +1,7 @@
 (in-package #:mazes.demo)
 
-
 ;;;; Config
-(setf *bypass-cache* t)
+(setf *bypass-cache* nil)
 
 (defparameter *width* 800)
 (defparameter *height* 800)
@@ -32,17 +31,46 @@
 
 
 ;;;; Sketch
+(defparameter *wall-pen*
+  (make-pen :weight 3 :stroke (rgb 0.625 0.423 0.399)))
+
+(defun draw-maze (grid cell-size)
+  (in-context
+    (translate (/ (* (grid-cols grid) cell-size) -2)
+               (/ (* (grid-rows grid) cell-size) -2))
+    (with-pen *wall-pen*
+      (grid-loop-cells cell grid
+        (let ((x1 (* cell-size (cell-col cell)))
+              (y1 (* cell-size (cell-row cell)))
+              (x2 (* cell-size (1+ (cell-col cell))))
+              (y2 (* cell-size (1+ (cell-row cell)))))
+          (when (not (cell-north cell))
+            (line x1 y1 x2 y1))
+          (when (not (cell-west cell))
+            (line x1 y1 x1 y2))
+          (when (not (cell-linked-east-p cell))
+            (line x2 y1 x2 y2))
+          (when (not (cell-linked-south-p cell))
+            (line x1 y2 x2 y2)))))))
+
 (defsketch demo
-    ((width *width*) (height *height*) (y-axis :up) (title "Mazes")
+    ((width *width*) (height *height*) (y-axis :down) (title "Mazes")
      (mouse (cons 0 0))
+     (frame 0)
      ;; Variables
+     (maze (make-grid 20 20))
+     (gen (binary-tree-generator maze))
      ;; Pens
      (simple-pen (make-pen :fill (gray 0.1)))
      (line-pen (make-pen :stroke (gray 0.1) :weight 1))
      )
   (with-setup
     ;;
+    (draw-maze maze 30)
+    (if (dividesp frame 5)
+      (funcall gen))
     ;;
+    (incf frame)
     ))
 
 
@@ -135,7 +163,4 @@
 
 
 ;;;; Run
-(defparameter g (make-grid 7 5))
-(gen-binary-tree g)
-
 ; (defparameter *demo* (make-instance 'demo))
