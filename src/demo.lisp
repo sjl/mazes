@@ -1,7 +1,7 @@
 (in-package #:mazes.demo)
 
 ;;;; Config
-(setf *bypass-cache* nil)
+(setf *bypass-cache* t)
 
 (defparameter *width* 800)
 (defparameter *height* 800)
@@ -58,16 +58,16 @@
      (mouse (cons 0 0))
      (frame 0)
      ;; Variables
-     (maze (make-grid 20 20))
-     (gen (binary-tree-generator maze))
+     (maze (make-grid 25 25))
+     (gen (sidewinder-generator maze))
      ;; Pens
      (simple-pen (make-pen :fill (gray 0.1)))
      (line-pen (make-pen :stroke (gray 0.1) :weight 1))
      )
   (with-setup
     ;;
-    (draw-maze maze 30)
-    (if (dividesp frame 5)
+    (draw-maze maze 20)
+    (if (dividesp frame 2)
       (funcall gen))
     ;;
     (incf frame)

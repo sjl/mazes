@@ -100,8 +100,17 @@
         :do (progn ,@body)))))
 
 (defmacro grid-loop-rows (row-symbol grid &body body)
-  `(grid-map-rows (lambda (,row-symbol) ,@body)
-    ,grid))
+  (with-gensyms (row cols)
+    (once-only (grid)
+      `(loop
+        :with ,cols = (grid-cols ,grid)
+        :for ,row :from 0 :below (grid-rows ,grid)
+        :for ,row-symbol = (make-array ,cols
+                             :element-type 'cell
+                             :displaced-to (grid-cells ,grid)
+                             :displaced-index-offset
+                             (array-row-major-index (grid-cells grid) ,row 0))
+        :do (progn ,@body)))))
 
 
 (defun grid-size (grid)

@@ -7,6 +7,7 @@
     #:dividesp
     #:in-context
     #:random-elt
+    #:randomp
     #:zap%
     #:full-list
     #:%))
@@ -65,7 +66,9 @@
     #:mazes.grid)
   (:export
     #:binary-tree
-    #:binary-tree-generator)
+    #:binary-tree-generator
+    #:sidewinder
+    #:sidewinder-generator)
   (:import-from #:snakes
     #:defgenerator
     #:do-generator
