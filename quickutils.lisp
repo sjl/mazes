@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:WITH-GENSYMS :ONCE-ONLY) :ensure-package T :package "MAZES.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:WHILE :WITH-GENSYMS :ONCE-ONLY) :ensure-package T :package "MAZES.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "MAZES.QUICKUTILS")
@@ -13,8 +13,22 @@
 (in-package "MAZES.QUICKUTILS")
 
 (when (boundp '*utilities*)
-  (setf *utilities* (union *utilities* '(:STRING-DESIGNATOR :WITH-GENSYMS
-                                         :MAKE-GENSYM-LIST :ONCE-ONLY))))
+  (setf *utilities* (union *utilities* '(:UNTIL :WHILE :STRING-DESIGNATOR
+                                         :WITH-GENSYMS :MAKE-GENSYM-LIST
+                                         :ONCE-ONLY))))
+
+  (defmacro until (expression &body body)
+    "Executes `body` until `expression` is true."
+    `(do ()
+         (,expression)
+       ,@body))
+  
+
+  (defmacro while (expression &body body)
+    "Executes `body` while `expression` is true."
+    `(until (not ,expression)
+       ,@body))
+  
 
   (deftype string-designator ()
     "A string designator type. A string designator is either a string, a symbol,
@@ -107,6 +121,6 @@ Example:
                ,@forms)))))
   
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (export '(with-gensyms with-unique-names once-only)))
+  (export '(while with-gensyms with-unique-names once-only)))
 
 ;;;; END OF quickutils.lisp ;;;;

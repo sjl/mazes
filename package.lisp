@@ -56,7 +56,12 @@
     #:grid-loop-cells
     #:grid-loop-rows
     #:grid-size
-    #:grid-random-cell))
+    #:grid-random-cell
+    #:distance-map
+    #:make-dm
+    #:dm-distance
+    #:dm-cells
+    #:cell-distance-map))
 
 (defpackage #:mazes.generation
   (:use

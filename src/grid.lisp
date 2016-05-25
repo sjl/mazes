@@ -163,3 +163,43 @@
               :do (setf top (cl-strings:insert cell-top top)
                         bottom (cl-strings:insert cell-bot bottom)))
         (format stream "~A~%~A~%" top bottom)))))
+
+
+;;;; Distance Map
+(defclass distance-map ()
+  ((root :initarg :root :accessor dm-root)
+   (distances :initarg :distances :accessor dm-distances)))
+
+
+(defun make-dm (root)
+  (let ((dm (make-instance 'distance-map
+                           :root root
+                           :distances (make-hash-table))))
+    (setf (gethash root (dm-distances dm)) 0)
+    dm))
+
+
+(defun dm-distance (dm cell)
+  (gethash cell (dm-distances dm)))
+
+(defun (setf dm-distance) (new-value dm cell)
+  (setf (gethash cell (dm-distances dm)) new-value))
+
+(defun dm-cells (dm)
+  (loop :for cell :being :the hash-keys :of dm :collect cell))
+
+
+(defun cell-distance-map (cell)
+  (loop :with dm = (make-dm cell)
+        :for frontier = (list cell)
+        :then (loop :for cell :in frontier
+                    :for dist = (dm-distance dm cell)
+                    :append
+                    (loop :for linked :in (cell-links cell)
+                          :when (not (dm-distance dm linked))
+                          :collect
+                          (progn
+                            (setf (dm-distance dm linked) (1+ dist))
+                            linked)))
+        :while frontier
+        :finally (return dm)))

@@ -34,41 +34,48 @@
 (defparameter *wall-pen*
   (make-pen :weight 3 :stroke (rgb 0.625 0.423 0.399)))
 
-(defun draw-maze (grid cell-size)
-  (in-context
-    (translate (/ (* (grid-cols grid) cell-size) -2)
-               (/ (* (grid-rows grid) cell-size) -2))
-    (with-pen *wall-pen*
-      (grid-loop-cells cell grid
-        (let ((x1 (* cell-size (cell-col cell)))
-              (y1 (* cell-size (cell-row cell)))
-              (x2 (* cell-size (1+ (cell-col cell))))
-              (y2 (* cell-size (1+ (cell-row cell)))))
-          (when (not (cell-north cell))
-            (line x1 y1 x2 y1))
-          (when (not (cell-west cell))
-            (line x1 y1 x1 y2))
-          (when (not (cell-linked-east-p cell))
-            (line x2 y1 x2 y2))
-          (when (not (cell-linked-south-p cell))
-            (line x1 y2 x2 y2)))))))
+(defun draw-maze (grid distances)
+  (let ((cell-size (truncate (/ 700
+                                (max (grid-cols grid)
+                                     (grid-rows grid))))))
+    (in-context
+      (translate (/ (* (grid-cols grid) cell-size) -2)
+                 (/ (* (grid-rows grid) cell-size) -2))
+      (with-pen *wall-pen*
+        (with-font (make-font :color (rgb 0.314 0.235 0.325)
+                              :size 20)
+          (grid-loop-cells cell grid
+            (let ((x1 (* cell-size (cell-col cell)))
+                  (y1 (* cell-size (cell-row cell)))
+                  (x2 (* cell-size (1+ (cell-col cell))))
+                  (y2 (* cell-size (1+ (cell-row cell))))
+                  (dist (dm-distance distances cell)))
+              (when dist
+                (text (princ-to-string dist) (+ 5 x1) (+ 0 y1)))
+              (when (not (cell-north cell))
+                (line x1 y1 x2 y1))
+              (when (not (cell-west cell))
+                (line x1 y1 x1 y2))
+              (when (not (cell-linked-east-p cell))
+                (line x2 y1 x2 y2))
+              (when (not (cell-linked-south-p cell))
+                (line x1 y2 x2 y2)))))))))
 
 (defsketch demo
     ((width *width*) (height *height*) (y-axis :down) (title "Mazes")
      (mouse (cons 0 0))
      (frame 0)
      ;; Variables
-     (maze (make-grid 25 25))
-     (gen (sidewinder-generator maze))
+     (maze (make-grid 10 10))
+     (gen (sidewinder maze))
+     (distances (cell-distance-map (grid-ref maze 0 0)))
      ;; Pens
-     (simple-pen (make-pen :fill (gray 0.1)))
-     (line-pen (make-pen :stroke (gray 0.1) :weight 1))
      )
   (with-setup
     ;;
-    (draw-maze maze 20)
-    (if (dividesp frame 2)
-      (funcall gen))
+    (draw-maze maze distances)
+    ; (if (dividesp frame 2)
+    ;   (funcall gen))
     ;;
     (incf frame)
     ))
