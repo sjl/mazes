@@ -50,8 +50,8 @@
                   (x2 (* cell-size (1+ (cell-col cell))))
                   (y2 (* cell-size (1+ (cell-row cell))))
                   (dist (dm-distance distances cell)))
-              (when dist
-                (text (princ-to-string dist) (+ 5 x1) (+ 0 y1)))
+              ; (when dist
+              ;   (text (princ-to-string dist) (+ 5 x1) (+ 0 y1)))
               (when (not (cell-north cell))
                 (line x1 y1 x2 y1))
               (when (not (cell-west cell))
@@ -66,16 +66,16 @@
      (mouse (cons 0 0))
      (frame 0)
      ;; Variables
-     (maze (make-grid 10 10))
-     (gen (sidewinder maze))
+     (maze (make-grid 30 30))
+     (gen (sidewinder-generator maze))
      (distances (cell-distance-map (grid-ref maze 0 0)))
      ;; Pens
      )
   (with-setup
     ;;
     (draw-maze maze distances)
-    ; (if (dividesp frame 2)
-    ;   (funcall gen))
+    (if (dividesp frame 2)
+      (funcall gen))
     ;;
     (incf frame)
     ))
