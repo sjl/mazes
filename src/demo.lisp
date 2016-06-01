@@ -8,6 +8,7 @@
 
 (defparameter *center-x* (/ *width* 2))
 (defparameter *center-y* (/ *height* 2))
+(defparameter *maze-size* 700)
 
 
 ;;;; Globals
@@ -29,15 +30,18 @@
     (with-centered-coords
       ,@body)))
 
+(defun cell-size (grid)
+  (truncate (/ *maze-size*
+               (max (grid-cols grid)
+                    (grid-rows grid)))))
+
 
 ;;;; Sketch
 (defparameter *wall-pen*
   (make-pen :weight 3 :stroke (rgb 0.625 0.423 0.399)))
 
 (defun draw-maze (grid distances)
-  (let ((cell-size (truncate (/ 700
-                                (max (grid-cols grid)
-                                     (grid-rows grid))))))
+  (let ((cell-size (cell-size grid)))
     (in-context
       (translate (/ (* (grid-cols grid) cell-size) -2)
                  (/ (* (grid-rows grid) cell-size) -2))
@@ -48,10 +52,10 @@
             (let ((x1 (* cell-size (cell-col cell)))
                   (y1 (* cell-size (cell-row cell)))
                   (x2 (* cell-size (1+ (cell-col cell))))
-                  (y2 (* cell-size (1+ (cell-row cell))))
-                  (dist (dm-distance distances cell)))
-              ; (when dist
-              ;   (text (princ-to-string dist) (+ 5 x1) (+ 0 y1)))
+                  (y2 (* cell-size (1+ (cell-row cell)))))
+              (when distances
+                (text (princ-to-string (dm-distance distances cell))
+                      (+ 5 x1) (+ 0 y1)))
               (when (not (cell-north cell))
                 (line x1 y1 x2 y1))
               (when (not (cell-west cell))
@@ -65,23 +69,43 @@
     ((width *width*) (height *height*) (y-axis :down) (title "Mazes")
      (mouse (cons 0 0))
      (frame 0)
+     (log " ")
      ;; Variables
-     (maze (make-grid 30 30))
-     (gen (sidewinder-generator maze))
-     (distances (cell-distance-map (grid-ref maze 0 0)))
+     (grid (make-grid 10 10))
+     (gen (sidewinder-generator grid))
+     (distances nil)
      ;; Pens
+     (log-font (make-font :color (gray 0.8)))
      )
   (with-setup
     ;;
-    (draw-maze maze distances)
-    (if (dividesp frame 2)
+    (draw-maze grid distances)
+    (if (dividesp frame 1)
       (funcall gen))
     ;;
+    (with-font log-font
+      (text log
+            (- *center-x*)
+            (- *center-y* 22)))
     (incf frame)
     ))
 
 
 ;;;; Mouse
+(defun cell-clicked (instance x y)
+  ;; assume a square grid for now...
+  (with-slots (log grid) instance
+    (let* ((cell-size (cell-size grid))
+           (offset (/ (- *width* *maze-size*) 2))
+           (x (- x offset))
+           (y (- y offset)))
+      (if (and (< -1 x *maze-size*)
+               (< -1 y *maze-size*))
+        (values (truncate (/ y cell-size))
+                (truncate (/ x cell-size)))
+        (values nil nil)))))
+
+
 (defun mousemove (instance x y)
   (with-slots (mouse) instance
     (setf (car mouse) x)
@@ -93,7 +117,11 @@
 
 (defun mousedown-left (instance x y)
   (declare (ignorable instance x y))
-  )
+  (multiple-value-bind (row col) (cell-clicked instance x y)
+    (when row
+      (with-slots (distances grid) instance
+        (setf distances
+              (cell-distance-map (grid-ref grid row col)))))))
 
 (defun mousedown-right (instance x y)
   (declare (ignorable instance x y))
