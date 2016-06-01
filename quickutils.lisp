@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:WHILE :WITH-GENSYMS :ONCE-ONLY :CURRY :RCURRY) :ensure-package T :package "MAZES.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:WHILE :WITH-GENSYMS :ONCE-ONLY :CURRY :RCURRY :ZIP) :ensure-package T :package "MAZES.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "MAZES.QUICKUTILS")
@@ -16,7 +16,7 @@
   (setf *utilities* (union *utilities* '(:UNTIL :WHILE :STRING-DESIGNATOR
                                          :WITH-GENSYMS :MAKE-GENSYM-LIST
                                          :ONCE-ONLY :ENSURE-FUNCTION :CURRY
-                                         :RCURRY))))
+                                         :RCURRY :TRANSPOSE :ZIP))))
 
   (defmacro until (expression &body body)
     "Executes `body` until `expression` is true."
@@ -166,7 +166,18 @@ with and `arguments` to `function`."
         (declare (dynamic-extent more))
         (multiple-value-call fn (values-list more) (values-list arguments)))))
   
+
+  (defun transpose (lists)
+    "Analog to matrix transpose for a list of lists given by `lists`."
+    (apply #'mapcar #'list lists))
+  
+
+  (defun zip (&rest lists)
+    "Take a tuple of lists and turn them into a list of
+tuples. Equivalent to `unzip`."
+    (transpose lists))
+  
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (export '(while with-gensyms with-unique-names once-only curry rcurry)))
+  (export '(while with-gensyms with-unique-names once-only curry rcurry zip)))
 
 ;;;; END OF quickutils.lisp ;;;;

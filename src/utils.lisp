@@ -56,3 +56,27 @@
 
 (defun largest (list &key (key #'identity))
   (first (sort (copy-list list) #'> :key key)))
+
+(defmacro recursively (bindings &body body)
+  "Execute body recursively, like Clojure's `loop`/`recur`.
+
+  `bindings` should contain a list of symbols and (optional) default values.
+
+  In `body`, `recur` will be bound to the function for recurring.
+
+  Example:
+
+      (defun length (some-list)
+        (recursively ((list some-list) (n 0))
+          (if (null list)
+            n
+            (recur (cdr list) (1+ n)))))
+
+  "
+  (flet ((extract-var (binding)
+           (if (atom binding) binding (first binding)))
+         (extract-val (binding)
+           (if (atom binding) nil (second binding))))
+    `(labels ((recur ,(mapcar #'extract-var bindings)
+                ,@body))
+      (recur ,@(mapcar #'extract-val bindings)))))

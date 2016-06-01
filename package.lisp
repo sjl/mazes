@@ -12,6 +12,8 @@
     #:full-list
     #:smallest
     #:largest
+    #:recursively
+    #:recur
     #:%))
 
 (defpackage #:mazes.fps

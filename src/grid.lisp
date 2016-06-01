@@ -207,14 +207,11 @@
 
 ;;;; Path Finding
 (defun dijkstra (distances target)
-  (let ((root (dm-root distances)))
-    (labels
-        ((recur (cell path)
-           (when cell
-             (if (eql cell root)
-               (cons root path)
-               (recur
-                 (smallest (cell-links cell)
-                           :key (curry #'dm-distance distances))
-                 (cons cell path))))))
-      (recur target nil))))
+  (let ((root (dm-root distances))
+        (dist (curry #'dm-distance distances)))
+    (recursively ((cell target) path)
+      (cond
+        ((not cell) nil) ; maze is fucked
+        ((eql cell root) (cons root path)) ; done
+        (t (recur (smallest (cell-links cell) :key dist) ; loop
+                  (cons cell path)))))))

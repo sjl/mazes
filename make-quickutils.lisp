@@ -12,6 +12,7 @@
                ; :iota
                :curry
                :rcurry
+               ; :zip
                ; :compose
                ; :n-grams
                )
