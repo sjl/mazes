@@ -50,3 +50,9 @@
 (defun full-list (&rest args)
   (remove-if #'null args))
 
+
+(defun smallest (list &key (key #'identity))
+  (first (sort (copy-list list) #'< :key key)))
+
+(defun largest (list &key (key #'identity))
+  (first (sort (copy-list list) #'> :key key)))

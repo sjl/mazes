@@ -10,8 +10,8 @@
                :with-gensyms
                :once-only
                ; :iota
-               ; :curry
-               ; :rcurry
+               :curry
+               :rcurry
                ; :compose
                ; :n-grams
                )

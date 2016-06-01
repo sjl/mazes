@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:WHILE :WITH-GENSYMS :ONCE-ONLY) :ensure-package T :package "MAZES.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:WHILE :WITH-GENSYMS :ONCE-ONLY :CURRY :RCURRY) :ensure-package T :package "MAZES.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "MAZES.QUICKUTILS")
@@ -15,7 +15,8 @@
 (when (boundp '*utilities*)
   (setf *utilities* (union *utilities* '(:UNTIL :WHILE :STRING-DESIGNATOR
                                          :WITH-GENSYMS :MAKE-GENSYM-LIST
-                                         :ONCE-ONLY))))
+                                         :ONCE-ONLY :ENSURE-FUNCTION :CURRY
+                                         :RCURRY))))
 
   (defmacro until (expression &body body)
     "Executes `body` until `expression` is true."
@@ -121,6 +122,51 @@ Example:
                ,@forms)))))
   
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (export '(while with-gensyms with-unique-names once-only)))
+  ;;; To propagate return type and allow the compiler to eliminate the IF when
+  ;;; it is known if the argument is function or not.
+  (declaim (inline ensure-function))
+
+  (declaim (ftype (function (t) (values function &optional))
+                  ensure-function))
+  (defun ensure-function (function-designator)
+    "Returns the function designated by `function-designator`:
+if `function-designator` is a function, it is returned, otherwise
+it must be a function name and its `fdefinition` is returned."
+    (if (functionp function-designator)
+        function-designator
+        (fdefinition function-designator)))
+  )                                        ; eval-when
+
+  (defun curry (function &rest arguments)
+    "Returns a function that applies `arguments` and the arguments
+it is called with to `function`."
+    (declare (optimize (speed 3) (safety 1) (debug 1)))
+    (let ((fn (ensure-function function)))
+      (lambda (&rest more)
+        (declare (dynamic-extent more))
+        ;; Using M-V-C we don't need to append the arguments.
+        (multiple-value-call fn (values-list arguments) (values-list more)))))
+
+  (define-compiler-macro curry (function &rest arguments)
+    (let ((curries (make-gensym-list (length arguments) "CURRY"))
+          (fun (gensym "FUN")))
+      `(let ((,fun (ensure-function ,function))
+             ,@(mapcar #'list curries arguments))
+         (declare (optimize (speed 3) (safety 1) (debug 1)))
+         (lambda (&rest more)
+           (apply ,fun ,@curries more)))))
+  
+
+  (defun rcurry (function &rest arguments)
+    "Returns a function that applies the arguments it is called
+with and `arguments` to `function`."
+    (declare (optimize (speed 3) (safety 1) (debug 1)))
+    (let ((fn (ensure-function function)))
+      (lambda (&rest more)
+        (declare (dynamic-extent more))
+        (multiple-value-call fn (values-list more) (values-list arguments)))))
+  
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (export '(while with-gensyms with-unique-names once-only curry rcurry)))
 
 ;;;; END OF quickutils.lisp ;;;;

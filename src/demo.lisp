@@ -40,30 +40,45 @@
 (defparameter *wall-pen*
   (make-pen :weight 3 :stroke (rgb 0.625 0.423 0.399)))
 
-(defun draw-maze (grid distances)
+(defparameter *path-pen*
+  (make-pen :fill (rgb 0.314 0.235 0.325)))
+
+(defparameter *end-pen*
+  (make-pen :fill (rgb 0.429 0.321 0.445)))
+
+
+(defun draw-maze (grid start end path)
   (let ((cell-size (cell-size grid)))
-    (in-context
-      (translate (/ (* (grid-cols grid) cell-size) -2)
-                 (/ (* (grid-rows grid) cell-size) -2))
-      (with-pen *wall-pen*
-        (with-font (make-font :color (rgb 0.314 0.235 0.325)
-                              :size 20)
-          (grid-loop-cells cell grid
-            (let ((x1 (* cell-size (cell-col cell)))
-                  (y1 (* cell-size (cell-row cell)))
-                  (x2 (* cell-size (1+ (cell-col cell))))
-                  (y2 (* cell-size (1+ (cell-row cell)))))
-              (when distances
-                (text (princ-to-string (dm-distance distances cell))
-                      (+ 5 x1) (+ 0 y1)))
-              (when (not (cell-north cell))
-                (line x1 y1 x2 y1))
-              (when (not (cell-west cell))
-                (line x1 y1 x1 y2))
-              (when (not (cell-linked-east-p cell))
-                (line x2 y1 x2 y2))
-              (when (not (cell-linked-south-p cell))
-                (line x1 y2 x2 y2)))))))))
+    (labels ((cell-x (cell &optional (offset 0))
+               (* cell-size (+ offset (cell-col cell))))
+             (cell-y (cell &optional (offset 0))
+               (* cell-size (+ offset (cell-row cell))))
+             (draw-cell (cell)
+               (rect (cell-x cell) (cell-y cell) cell-size cell-size)))
+      (in-context
+        (translate (/ (* (grid-cols grid) cell-size) -2)
+                   (/ (* (grid-rows grid) cell-size) -2))
+        (with-pen *path-pen*
+          (map nil #'draw-cell path))
+        (with-pen *end-pen*
+          (when start (draw-cell start))
+          (when end (draw-cell end)))
+        (with-pen *wall-pen*
+          (with-font (make-font :color (rgb 0.314 0.235 0.325)
+                                :size 20)
+            (grid-loop-cells cell grid
+              (let ((x1 (cell-x cell))
+                    (y1 (cell-y cell))
+                    (x2 (cell-x cell 1))
+                    (y2 (cell-y cell 1)))
+                (when (not (cell-north cell))
+                  (line x1 y1 x2 y1))
+                (when (not (cell-west cell))
+                  (line x1 y1 x1 y2))
+                (when (not (cell-linked-east-p cell))
+                  (line x2 y1 x2 y2))
+                (when (not (cell-linked-south-p cell))
+                  (line x1 y2 x2 y2))))))))))
 
 (defsketch demo
     ((width *width*) (height *height*) (y-axis :down) (title "Mazes")
@@ -71,15 +86,18 @@
      (frame 0)
      (log " ")
      ;; Variables
-     (grid (make-grid 10 10))
+     (grid (make-grid 20 20))
      (gen (sidewinder-generator grid))
      (distances nil)
+     (path nil)
+     (start nil)
+     (end nil)
      ;; Pens
      (log-font (make-font :color (gray 0.8)))
      )
   (with-setup
     ;;
-    (draw-maze grid distances)
+    (draw-maze grid start end path)
     (if (dividesp frame 1)
       (funcall gen))
     ;;
@@ -118,14 +136,25 @@
 (defun mousedown-left (instance x y)
   (declare (ignorable instance x y))
   (multiple-value-bind (row col) (cell-clicked instance x y)
-    (when row
-      (with-slots (distances grid) instance
-        (setf distances
-              (cell-distance-map (grid-ref grid row col)))))))
+    (with-slots (end grid distances path) instance
+      (when (and row col distances)
+        (setf end
+              (grid-ref grid row col)
+              path
+              (dijkstra distances end))))))
 
 (defun mousedown-right (instance x y)
   (declare (ignorable instance x y))
-  )
+  (multiple-value-bind (row col) (cell-clicked instance x y)
+    (when row
+      (with-slots (start distances grid end path) instance
+        (setf distances
+              (cell-distance-map (grid-ref grid row col))
+              start
+              (grid-ref grid row col)
+              end nil
+              path nil
+              )))))
 
 (defun mouseup-left (instance x y)
   (declare (ignorable instance x y))

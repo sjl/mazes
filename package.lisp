@@ -10,6 +10,8 @@
     #:randomp
     #:zap%
     #:full-list
+    #:smallest
+    #:largest
     #:%))
 
 (defpackage #:mazes.fps
@@ -61,7 +63,8 @@
     #:make-dm
     #:dm-distance
     #:dm-cells
-    #:cell-distance-map))
+    #:cell-distance-map
+    #:dijkstra))
 
 (defpackage #:mazes.generation
   (:use

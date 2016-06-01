@@ -203,3 +203,18 @@
                             linked)))
         :while frontier
         :finally (return dm)))
+
+
+;;;; Path Finding
+(defun dijkstra (distances target)
+  (let ((root (dm-root distances)))
+    (labels
+        ((recur (cell path)
+           (when cell
+             (if (eql cell root)
+               (cons root path)
+               (recur
+                 (smallest (cell-links cell)
+                           :key (curry #'dm-distance distances))
+                 (cons cell path))))))
+      (recur target nil))))
