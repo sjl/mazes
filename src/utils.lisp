@@ -51,11 +51,10 @@
   (remove-if #'null args))
 
 
-(defun smallest (list &key (key #'identity))
-  (first (sort (copy-list list) #'< :key key)))
-
 (defun largest (list &key (key #'identity))
-  (first (sort (copy-list list) #'> :key key)))
+  (loop :for item :in list
+        :when item :maximize (funcall key item)))
+
 
 (defmacro recursively (bindings &body body)
   "Execute body recursively, like Clojure's `loop`/`recur`.
@@ -80,3 +79,30 @@
     `(labels ((recur ,(mapcar #'extract-var bindings)
                 ,@body))
       (recur ,@(mapcar #'extract-val bindings)))))
+
+
+(defun best (list predicate &key (key #'identity))
+  (when list
+    (flet ((reduce-keys (a b)
+             (if (funcall predicate
+                          (funcall key a)
+                          (funcall key b))
+               a
+               b)))
+      (reduce #'reduce-keys list))))
+
+
+(defun smallest (list &key (key #'identity))
+  (best list (lambda (a b)
+               (when a
+                 (or (null b)
+                     (< a b))))
+        :key key))
+
+(defun largest (list &key (key #'identity))
+  (best list
+        (lambda (a b)
+          (when a
+            (or (null b)
+                (> a b))))
+        :key key))

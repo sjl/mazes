@@ -88,6 +88,7 @@
      ;; Variables
      (grid (make-grid 20 20))
      (gen (sidewinder-generator grid))
+     (finished-generating nil)
      (distances nil)
      (path nil)
      (start nil)
@@ -98,8 +99,10 @@
   (with-setup
     ;;
     (draw-maze grid start end path)
-    (if (dividesp frame 1)
-      (funcall gen))
+    (if (and (not finished-generating)
+             (dividesp frame 1))
+      (when (funcall gen)
+        (setf finished-generating t)))
     ;;
     (with-font log-font
       (text log
@@ -135,26 +138,28 @@
 
 (defun mousedown-left (instance x y)
   (declare (ignorable instance x y))
-  (multiple-value-bind (row col) (cell-clicked instance x y)
-    (with-slots (end grid distances path) instance
-      (when (and row col distances)
-        (setf end
-              (grid-ref grid row col)
-              path
-              (dijkstra distances end))))))
+  (with-slots (end grid distances path finished-generating) instance
+    (when finished-generating
+      (multiple-value-bind (row col) (cell-clicked instance x y)
+        (when (and row col distances)
+          (setf end
+                (grid-ref grid row col)
+                path
+                (dijkstra distances end)))))))
 
 (defun mousedown-right (instance x y)
   (declare (ignorable instance x y))
-  (multiple-value-bind (row col) (cell-clicked instance x y)
-    (when row
-      (with-slots (start distances grid end path) instance
-        (setf distances
-              (cell-distance-map (grid-ref grid row col))
-              start
-              (grid-ref grid row col)
-              end nil
-              path nil
-              )))))
+  (with-slots (start distances grid end path finished-generating) instance
+    (when finished-generating
+      (multiple-value-bind (row col) (cell-clicked instance x y)
+        (when row
+          (setf distances
+                (cell-distance-map (grid-ref grid row col))
+                start
+                (grid-ref grid row col)
+                end nil
+                path nil
+                ))))))
 
 (defun mouseup-left (instance x y)
   (declare (ignorable instance x y))
