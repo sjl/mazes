@@ -106,3 +106,7 @@
             (or (null b)
                 (> a b))))
         :key key))
+
+
+(defun hash-keys (hash-table)
+  (loop :for k :being :the hash-keys :of hash-table :collect k))

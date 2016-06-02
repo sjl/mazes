@@ -9,6 +9,7 @@
 (defparameter *center-x* (/ *width* 2))
 (defparameter *center-y* (/ *height* 2))
 (defparameter *maze-size* 700)
+(defparameter *generator* #'sidewinder-generator)
 
 
 ;;;; Globals
@@ -41,13 +42,16 @@
   (make-pen :weight 3 :stroke (rgb 0.625 0.423 0.399)))
 
 (defparameter *path-pen*
+  (make-pen :fill (rgb 0.831 0.537 0.416)))
+
+(defparameter *longest-pen*
   (make-pen :fill (rgb 0.314 0.235 0.325)))
 
 (defparameter *end-pen*
-  (make-pen :fill (rgb 0.429 0.321 0.445)))
+  (make-pen :fill (rgb 1.000 0.733 0.424)))
 
 
-(defun draw-maze (grid start end path)
+(defun draw-maze (grid start end path longest-path)
   (let ((cell-size (cell-size grid)))
     (labels ((cell-x (cell &optional (offset 0))
                (* cell-size (+ offset (cell-col cell))))
@@ -58,6 +62,8 @@
       (in-context
         (translate (/ (* (grid-cols grid) cell-size) -2)
                    (/ (* (grid-rows grid) cell-size) -2))
+        (with-pen *longest-pen*
+          (map nil #'draw-cell longest-path))
         (with-pen *path-pen*
           (map nil #'draw-cell path))
         (with-pen *end-pen*
@@ -80,6 +86,14 @@
                 (when (not (cell-linked-south-p cell))
                   (line x1 y2 x2 y2))))))))))
 
+
+(defun find-longest-path (grid)
+  (let ((distances (-> (grid-ref grid 0 0)
+                     cell-distance-map
+                     dm-max
+                     cell-distance-map)))
+    (dijkstra distances (dm-max distances))))
+
 (defsketch demo
     ((width *width*) (height *height*) (y-axis :down) (title "Mazes")
      (mouse (cons 0 0))
@@ -87,10 +101,11 @@
      (log " ")
      ;; Variables
      (grid (make-grid 20 20))
-     (gen (sidewinder-generator grid))
+     (gen (funcall *generator* grid))
      (finished-generating nil)
      (distances nil)
      (path nil)
+     (longest-path nil)
      (start nil)
      (end nil)
      ;; Pens
@@ -98,11 +113,12 @@
      )
   (with-setup
     ;;
-    (draw-maze grid start end path)
+    (draw-maze grid start end path longest-path)
     (if (and (not finished-generating)
              (dividesp frame 1))
       (when (funcall gen)
-        (setf finished-generating t)))
+        (setf finished-generating t
+              longest-path (find-longest-path grid))))
     ;;
     (with-font log-font
       (text log
@@ -209,6 +225,8 @@
     (:scancode-lgui (setf *command* t))
     (:scancode-lalt (setf *option* t))
     ;;
+    (:scancode-s (setf *generator* #'sidewinder-generator))
+    (:scancode-b (setf *generator* #'binary-tree-generator))
     ;;
     ))
 

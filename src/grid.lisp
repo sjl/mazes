@@ -186,7 +186,10 @@
   (setf (gethash cell (dm-distances dm)) new-value))
 
 (defun dm-cells (dm)
-  (loop :for cell :being :the hash-keys :of dm :collect cell))
+  (hash-keys (dm-distances dm)))
+
+(defun dm-max (dm)
+  (largest (dm-cells dm) :key (curry #'dm-distance dm)))
 
 
 (defun cell-distance-map (cell)

@@ -14,6 +14,7 @@
     #:largest
     #:recursively
     #:recur
+    #:hash-keys
     #:%))
 
 (defpackage #:mazes.fps
@@ -65,6 +66,7 @@
     #:make-dm
     #:dm-distance
     #:dm-cells
+    #:dm-max
     #:cell-distance-map
     #:dijkstra))
 
