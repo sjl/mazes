@@ -51,27 +51,38 @@
   (make-pen :fill (rgb 1.000 0.733 0.424)))
 
 
-(defun draw-maze (grid start end path longest-path)
-  (let ((cell-size (cell-size grid)))
-    (labels ((cell-x (cell &optional (offset 0))
-               (* cell-size (+ offset (cell-col cell))))
-             (cell-y (cell &optional (offset 0))
-               (* cell-size (+ offset (cell-row cell))))
-             (draw-cell (cell)
-               (rect (cell-x cell) (cell-y cell) cell-size cell-size)))
-      (in-context
-        (translate (/ (* (grid-cols grid) cell-size) -2)
-                   (/ (* (grid-rows grid) cell-size) -2))
-        (with-pen *longest-pen*
-          (map nil #'draw-cell longest-path))
-        (with-pen *path-pen*
-          (map nil #'draw-cell path))
-        (with-pen *end-pen*
-          (when start (draw-cell start))
-          (when end (draw-cell end)))
-        (with-pen *wall-pen*
-          (with-font (make-font :color (rgb 0.314 0.235 0.325)
-                                :size 20)
+(defun draw-maze (instance)
+  (with-slots (grid start end path longest-path show-longest show-colors)
+      instance
+    (let ((cell-size (cell-size grid)))
+      (labels ((cell-x (cell &optional (offset 0))
+                 (* cell-size (+ offset (cell-col cell))))
+               (cell-y (cell &optional (offset 0))
+                 (* cell-size (+ offset (cell-row cell))))
+               (draw-cell (cell)
+                 (rect (cell-x cell) (cell-y cell) cell-size cell-size)))
+        (in-context
+          (translate (/ (* (grid-cols grid) cell-size) -2)
+                     (/ (* (grid-rows grid) cell-size) -2))
+          (when (and show-colors start)
+            (let* ((distances (cell-distance-map start))
+                   (max (dm-distance distances (dm-max distances))))
+              (grid-loop-cells cell grid
+                (with-pen
+                    (make-pen :fill (lerp-color
+                                      (rgb 0.149 0.141 0.212)
+                                      (rgb 0.570 0.429 0.591)
+                                      (/ (dm-distance distances cell) max)))
+                  (draw-cell cell)))))
+          (when show-longest
+            (with-pen *longest-pen*
+              (map nil #'draw-cell longest-path)))
+          (with-pen *path-pen*
+            (map nil #'draw-cell path))
+          (with-pen *end-pen*
+            (when start (draw-cell start))
+            (when end (draw-cell end)))
+          (with-pen *wall-pen*
             (grid-loop-cells cell grid
               (let ((x1 (cell-x cell))
                     (y1 (cell-y cell))
@@ -108,12 +119,14 @@
      (longest-path nil)
      (start nil)
      (end nil)
+     (show-longest nil)
+     (show-colors nil)
      ;; Pens
      (log-font (make-font :color (gray 0.8)))
      )
   (with-setup
     ;;
-    (draw-maze grid start end path longest-path)
+    (draw-maze sketch::instance)
     (if (and (not finished-generating)
              (dividesp frame 1))
       (when (funcall gen)
@@ -221,12 +234,22 @@
   (scancode-case scancode
     (:scancode-space (sketch::prepare instance))
     (:scancode-lshift (setf *shift* t))
+    (:scancode-rshift (setf *shift* t))
     (:scancode-lctrl (setf *control* t))
+    (:scancode-rctrl (setf *control* t))
     (:scancode-lgui (setf *command* t))
+    (:scancode-rgui (setf *command* t))
     (:scancode-lalt (setf *option* t))
+    (:scancode-ralt (setf *option* t))
     ;;
     (:scancode-s (setf *generator* #'sidewinder-generator))
     (:scancode-b (setf *generator* #'binary-tree-generator))
+    (:scancode-l (if *shift*
+                   (zap% (slot-value instance 'show-longest) #'not %)
+                   nil))
+    (:scancode-c (if *shift*
+                   (zap% (slot-value instance 'show-colors) #'not %)
+                   nil))
     ;;
     ))
 
@@ -234,9 +257,13 @@
   (declare (ignorable instance))
   (scancode-case scancode
     (:scancode-lshift (setf *shift* nil))
+    (:scancode-rshift (setf *shift* nil))
     (:scancode-lctrl (setf *control* nil))
+    (:scancode-rctrl (setf *control* nil))
     (:scancode-lgui (setf *command* nil))
+    (:scancode-rgui (setf *command* nil))
     (:scancode-lalt (setf *option* nil))
+    (:scancode-ralt (setf *option* nil))
     (:scancode-space nil)))
 
 
