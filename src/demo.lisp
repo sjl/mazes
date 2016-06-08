@@ -9,8 +9,11 @@
 (defparameter *center-x* (/ *width* 2))
 (defparameter *center-y* (/ *height* 2))
 (defparameter *maze-size* 700)
-(defparameter *generator* #'sidewinder-generator)
-
+(defvar *generator* #'sidewinder-generator)
+(defvar *instant* nil)
+(defvar *show-longest* nil)
+(defvar *show-colors* nil)
+(defvar *cell-size* nil)
 
 ;;;; Globals
 (defvar *shift* nil)
@@ -51,65 +54,85 @@
   (make-pen :fill (rgb 1.000 0.733 0.424)))
 
 (defparameter *active-pen*
-  (make-pen :fill (rgb 0.731 0.550 0.758)))
+  (make-pen :fill (rgb 1.000 0.273 0.476)))
 
 (defparameter *active-group-pen*
-  (make-pen :fill (rgb 0.427 0.322 0.443)))
+  (make-pen :fill (rgb 1.000 0.512 0.580)))
+
+
+(defun cell-x (cell &optional (offset 0))
+  (* *cell-size* (+ offset (cell-col cell))))
+
+(defun cell-y (cell &optional (offset 0))
+  (* *cell-size* (+ offset (cell-row cell))))
+
+(defun draw-cell (cell)
+  (rect (cell-x cell) (cell-y cell) *cell-size* *cell-size*))
+
+
+(defun draw-colors (instance)
+  (when *show-colors*
+    (let* ((grid (slot-value instance 'grid))
+           (distances (cell-distance-map
+                        (or (slot-value instance 'start)
+                            (grid-ref grid 0 0))))
+           (max (dm-distance distances (dm-max distances))))
+      (when (plusp max)
+        (grid-loop-cells cell grid
+          (when-let (distance (dm-distance distances cell))
+            (with-pen
+                (make-pen :fill (lerp-color
+                                  (rgb 0.149 0.141 0.212)
+                                  (rgb 0.570 0.429 0.591)
+                                  (/ distance max)))
+              (draw-cell cell))))))))
+
+(defun draw-longest (instance)
+  (when *show-longest*
+    (with-pen *longest-pen*
+      (map nil #'draw-cell (slot-value instance 'longest-path)))))
+
+(defun draw-path (instance)
+  (with-slots (start end path) instance
+    (with-pen *path-pen*
+      (map nil #'draw-cell path))
+    (with-pen *end-pen*
+      (when start (draw-cell start))
+      (when end (draw-cell end)))))
+
+(defun draw-active (instance)
+  (grid-loop-cells cell (slot-value instance 'grid)
+    (when (cell-active-group cell)
+      (with-pen *active-group-pen* (draw-cell cell)))
+    (when (cell-active cell)
+      (with-pen *active-pen* (draw-cell cell)))))
 
 
 (defun draw-maze (instance)
-  (with-slots (grid start end path longest-path show-longest show-colors)
-      instance
-    (let ((cell-size (cell-size grid)))
-      (labels ((cell-x (cell &optional (offset 0))
-                 (* cell-size (+ offset (cell-col cell))))
-               (cell-y (cell &optional (offset 0))
-                 (* cell-size (+ offset (cell-row cell))))
-               (draw-cell (cell)
-                 (rect (cell-x cell) (cell-y cell) cell-size cell-size)))
-        (in-context
-          (translate (/ (* (grid-cols grid) cell-size) -2)
-                     (/ (* (grid-rows grid) cell-size) -2))
-          (when (and show-colors start)
-            (let* ((distances (cell-distance-map start))
-                   (max (dm-distance distances (dm-max distances))))
-              (grid-loop-cells cell grid
-                (with-pen
-                    (make-pen :fill (lerp-color
-                                      (rgb 0.149 0.141 0.212)
-                                      (rgb 0.570 0.429 0.591)
-                                      (/ (dm-distance distances cell) max)))
-                  (draw-cell cell)))))
-          (when show-longest
-            (with-pen *longest-pen*
-              (map nil #'draw-cell longest-path)))
-          (with-pen *path-pen*
-            (map nil #'draw-cell path))
-          (with-pen *end-pen*
-            (when start (draw-cell start))
-            (when end (draw-cell end)))
-          (grid-loop-cells cell grid
-            (with-pen *active-group-pen*
-              (when (cell-active-group cell)
-                (draw-cell cell)))
-            (with-pen *active-pen*
-              (when (cell-active cell)
-                (draw-cell cell))))
-          (with-pen *wall-pen*
-            (grid-loop-cells cell grid
-              (let ((x1 (cell-x cell))
-                    (y1 (cell-y cell))
-                    (x2 (cell-x cell 1))
-                    (y2 (cell-y cell 1)))
-                (when (not (cell-north cell))
-                  (line x1 y1 x2 y1))
-                (when (not (cell-west cell))
-                  (line x1 y1 x1 y2))
-                (when (not (cell-linked-east-p cell))
-                  (line x2 y1 x2 y2))
-                (when (not (cell-linked-south-p cell))
-                  (line x1 y2 x2 y2))))))))))
+  (with-slots (grid) instance
+    (in-context
+      (translate (/ (* (grid-cols grid) *cell-size*) -2)
+                 (/ (* (grid-rows grid) *cell-size*) -2))
+      (draw-colors instance)
+      (draw-longest instance)
+      (draw-path instance)
+      (draw-active instance)
+      (with-pen *wall-pen*
+        (grid-loop-cells cell grid
+          (let ((x1 (cell-x cell))
+                (y1 (cell-y cell))
+                (x2 (cell-x cell 1))
+                (y2 (cell-y cell 1)))
+            (when (not (cell-north cell))
+              (line x1 y1 x2 y1))
+            (when (not (cell-west cell))
+              (line x1 y1 x1 y2))
+            (when (not (cell-linked-east-p cell))
+              (line x2 y1 x2 y2))
+            (when (not (cell-linked-south-p cell))
+              (line x1 y2 x2 y2))))))))
 
+(defparameter *ui-font* nil)
 
 (defun find-longest-path (grid)
   (let ((distances (-> (grid-ref grid 0 0)
@@ -132,24 +155,27 @@
      (longest-path nil)
      (start nil)
      (end nil)
-     (show-longest nil)
-     (show-colors nil)
-     ;; Pens
-     (log-font (make-font :color (gray 0.8)))
      )
+  ;; Setup
+  (setf *cell-size* (cell-size grid))
+  (setf *ui-font* (make-font :color (gray 0.8) :size 14))
   (with-setup
-    ;;
-    (draw-maze sketch::instance)
-    (if (and (not finished-generating)
-             (dividesp frame 4))
+    ;; Maze
+    (when (and (not finished-generating)
+               (dividesp frame 5))
+      (when *instant*
+        (while (not (funcall gen))))
       (when (funcall gen)
         (setf finished-generating t
               longest-path (find-longest-path grid))))
+    (draw-maze sketch::instance)
+    ;; UI
+    (with-font *ui-font*
+      (text "algorithm: [a]ldous-broder [b]inary tree [s]idewinder"
+            (+ (- *center-x*) 5) (- *center-y* 40))
+      (text "display: [C]olor distances [L]ongest path [I]nstant generation"
+            (+ (- *center-x*) 5) (- *center-y* 22)))
     ;;
-    (with-font log-font
-      (text log
-            (- *center-x*)
-            (- *center-y* 22)))
     (incf frame)
     ))
 
@@ -158,14 +184,13 @@
 (defun cell-clicked (instance x y)
   ;; assume a square grid for now...
   (with-slots (log grid) instance
-    (let* ((cell-size (cell-size grid))
-           (offset (/ (- *width* *maze-size*) 2))
+    (let* ((offset (/ (- *width* *maze-size*) 2))
            (x (- x offset))
            (y (- y offset)))
       (if (and (< -1 x *maze-size*)
                (< -1 y *maze-size*))
-        (values (truncate (/ y cell-size))
-                (truncate (/ x cell-size)))
+        (values (truncate (/ y *cell-size*))
+                (truncate (/ x *cell-size*)))
         (values nil nil)))))
 
 
@@ -257,11 +282,15 @@
     ;;
     (:scancode-s (setf *generator* #'sidewinder-generator))
     (:scancode-b (setf *generator* #'binary-tree-generator))
+    (:scancode-a (setf *generator* #'aldous-broder-generator))
     (:scancode-l (if *shift*
-                   (zap% (slot-value instance 'show-longest) #'not %)
+                   (zap% *show-longest* #'not %)
                    nil))
     (:scancode-c (if *shift*
-                   (zap% (slot-value instance 'show-colors) #'not %)
+                   (zap% *show-colors* #'not %)
+                   nil))
+    (:scancode-i (if *shift*
+                   (zap% *instant* #'not %)
                    nil))
     ;;
     ))

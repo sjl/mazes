@@ -43,6 +43,11 @@
       (values nil nil)
       (values (elt seq (random length)) t))))
 
+(defmacro when-let ((symbol value) &body body)
+  `(let ((,symbol ,value))
+     (when ,symbol ,@body)))
+
+
 (defun randomp ()
   (zerop (random 2)))
 

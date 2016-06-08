@@ -150,6 +150,12 @@
             east (grid-ref grid row (1+ col))))))
 
 
+(defun grid-clear-active (grid)
+  (grid-loop-cells cell grid
+    (setf (cell-active cell) nil
+          (cell-active-group cell) nil)))
+
+
 (defmethod print-object ((grid grid) stream)
   (print-unreadable-object
       (grid stream :type t :identity nil)

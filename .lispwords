@@ -2,3 +2,5 @@
 (1 make-sketch)
 (2 grid-loop-cells grid-loop-rows)
 (1 recursively)
+(1 with-cell-active)
+(1 when-let)

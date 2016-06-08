@@ -1,5 +1,12 @@
 (in-package #:mazes.generation)
 
+(defmacro with-cell-active (cell-place &body body)
+  `(prog2
+     (setf (cell-active ,cell-place) t)
+     (progn ,@body)
+     (setf (cell-active ,cell-place) nil)))
+
+
 (defgenerator binary-tree-generator (grid)
   (grid-loop-cells cell grid
     (setf (cell-active cell) t)
@@ -11,7 +18,8 @@
     (setf (cell-active cell) nil)))
 
 (defun binary-tree (grid)
-  (do-generator (_ (binary-tree-generator grid))))
+  (do-generator (_ (binary-tree-generator grid)))
+  grid)
 
 
 (defgenerator sidewinder-generator (grid)
@@ -44,4 +52,24 @@
             (setf (cell-active cell) nil)))))
 
 (defun sidewinder (grid)
-  (do-generator (_ (sidewinder-generator grid))))
+  (do-generator (_ (sidewinder-generator grid)))
+  grid)
+
+
+(defgenerator aldous-broder-generator (grid)
+  (let ((cell (grid-random-cell grid))
+        (unvisited (1- (grid-size grid))))
+    (while (plusp unvisited)
+      (setf (cell-active-group cell) t)
+      (let ((neighbor (random-elt (cell-neighbors cell))))
+        (with-cell-active cell
+          (when (null (cell-links neighbor))
+            (cell-link cell neighbor)
+            (decf unvisited))
+          (yield))
+        (setf cell neighbor))))
+  (grid-clear-active grid))
+
+(defun aldous-broder (grid)
+  (do-generator (_ (aldous-broder-generator grid)))
+  grid)

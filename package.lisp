@@ -12,6 +12,7 @@
     #:full-list
     #:smallest
     #:largest
+    #:when-let
     #:recursively
     #:recur
     #:hash-keys
@@ -51,11 +52,13 @@
     #:cell-row
     #:cell-active
     #:cell-active-group
+    #:cell-links
     #:grid
     #:grid-cols
     #:grid-rows
     #:grid-cells
     #:grid-ref
+    #:grid-clear-active
     #:make-grid
     #:grid-size
     #:grid-map-cells
@@ -82,7 +85,9 @@
     #:binary-tree
     #:binary-tree-generator
     #:sidewinder
-    #:sidewinder-generator)
+    #:sidewinder-generator
+    #:aldous-broder
+    #:aldous-broder-generator)
   (:import-from #:snakes
     #:defgenerator
     #:do-generator
@@ -97,5 +102,7 @@
     #:mazes.generation
     #:mazes.quickutils
     #:mazes.utils
-    #:mazes.fps))
+    #:mazes.fps)
+  (:import-from #:snakes
+    #:do-generator))
 
