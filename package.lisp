@@ -90,6 +90,7 @@
   (:use
     #:cl
     #:sketch
+    #:cl-arrows
     #:mazes.grid
     #:mazes.generation
     #:mazes.quickutils
