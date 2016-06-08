@@ -49,6 +49,8 @@
     #:cell-west
     #:cell-col
     #:cell-row
+    #:cell-active
+    #:cell-active-group
     #:grid
     #:grid-cols
     #:grid-rows

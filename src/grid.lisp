@@ -8,6 +8,8 @@
    (south :accessor cell-south :initform nil)
    (east :accessor cell-east :initform nil)
    (west :accessor cell-west :initform nil)
+   (active :accessor cell-active :initform nil)
+   (active-group :accessor cell-active-group :initform nil)
    (links :accessor cell-links :initform nil)))
 
 

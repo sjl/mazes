@@ -50,6 +50,12 @@
 (defparameter *end-pen*
   (make-pen :fill (rgb 1.000 0.733 0.424)))
 
+(defparameter *active-pen*
+  (make-pen :fill (rgb 0.731 0.550 0.758)))
+
+(defparameter *active-group-pen*
+  (make-pen :fill (rgb 0.427 0.322 0.443)))
+
 
 (defun draw-maze (instance)
   (with-slots (grid start end path longest-path show-longest show-colors)
@@ -82,6 +88,13 @@
           (with-pen *end-pen*
             (when start (draw-cell start))
             (when end (draw-cell end)))
+          (grid-loop-cells cell grid
+            (with-pen *active-group-pen*
+              (when (cell-active-group cell)
+                (draw-cell cell)))
+            (with-pen *active-pen*
+              (when (cell-active cell)
+                (draw-cell cell))))
           (with-pen *wall-pen*
             (grid-loop-cells cell grid
               (let ((x1 (cell-x cell))
@@ -111,7 +124,7 @@
      (frame 0)
      (log " ")
      ;; Variables
-     (grid (make-grid 20 20))
+     (grid (make-grid 25 25))
      (gen (funcall *generator* grid))
      (finished-generating nil)
      (distances nil)
@@ -128,7 +141,7 @@
     ;;
     (draw-maze sketch::instance)
     (if (and (not finished-generating)
-             (dividesp frame 1))
+             (dividesp frame 4))
       (when (funcall gen)
         (setf finished-generating t
               longest-path (find-longest-path grid))))
