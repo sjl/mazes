@@ -15,6 +15,7 @@
 (defvar *show-colors* nil)
 (defvar *cell-size* nil)
 
+
 ;;;; Globals
 (defvar *shift* nil)
 (defvar *control* nil)

@@ -7,20 +7,39 @@
      (setf (cell-active ,cell-place) nil)))
 
 
+;;;; Binary Tree
+;;; The Binary Tree generation algorithm works by looping through each cell,
+;;; choosing either the north or east neighbor at random, and carving out the
+;;; wall to it.
+;;;
+;;; For the north and east edges of the map the only viable neighbor is always
+;;; picked, which results in signature long corridors on those edges.
+
 (defgenerator binary-tree-generator (grid)
   (grid-loop-cells cell grid
-    (setf (cell-active cell) t)
-    (let ((other (random-elt (full-list (cell-north cell)
-                                        (cell-east cell)))))
-      (when other
-        (cell-link cell other)))
-    (yield)
-    (setf (cell-active cell) nil)))
+    (with-cell-active cell
+      (let ((other (random-elt (full-list (cell-north cell)
+                                          (cell-east cell)))))
+        (when other
+          (cell-link cell other)))
+      (yield))))
 
 (defun binary-tree (grid)
   (do-generator (_ (binary-tree-generator grid)))
   grid)
 
+
+;;;; Sidewinder
+;;; The Sidewinder algorithm works by looping over each row.
+;;;
+;;; For each row it loops over the cells to form "runs" of consecutive
+;;; horizontal neighbors, randomly deciding when to end a particular run.  Once
+;;; a run is ended ("closed") it picks a random cell in the run and carves out
+;;; a passage north.
+;;;
+;;; For the top row of the map we never want to carve out to the north wall, so
+;;; we never allow the top row to close -- it'll always be a single run.  This
+;;; results in a signature long corridor along the top of the maze.
 
 (defgenerator sidewinder-generator (grid)
   (grid-loop-rows row grid
@@ -32,9 +51,8 @@
                                   (and (not at-north-bound)
                                        (randomp)))
           :do
-          (progn
-            (setf (cell-active-group cell) t
-                  (cell-active cell) t)
+          (with-cell-active cell
+            (setf (cell-active-group cell) t)
             (push cell run)
             (if should-close
               (let* ((member (random-elt run))
@@ -48,13 +66,19 @@
                 (setf run nil))
               (progn
                 (cell-link cell (cell-east cell))
-                (yield)))
-            (setf (cell-active cell) nil)))))
+                (yield)))))))
 
 (defun sidewinder (grid)
   (do-generator (_ (sidewinder-generator grid)))
   grid)
 
+
+;;;; Aldous-Broder
+;;; The Aldous-Broder algorithm picks a random cell and walks to a random
+;;; neighbor at each step.  If that neighbor has not been visited yet it carves
+;;; out the wall back to the previous cell.
+;;;
+;;; This produces really nice, unbiased mazes but is *really* slow.
 
 (defgenerator aldous-broder-generator (grid)
   (let ((cell (grid-random-cell grid))
