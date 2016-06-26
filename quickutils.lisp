@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:WHILE :WITH-GENSYMS :ONCE-ONLY :CURRY :RCURRY :ZIP) :ensure-package T :package "MAZES.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:WHILE :WITH-GENSYMS :ONCE-ONLY :CURRY :RCURRY :N-GRAMS) :ensure-package T :package "MAZES.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "MAZES.QUICKUTILS")
@@ -16,7 +16,7 @@
   (setf *utilities* (union *utilities* '(:UNTIL :WHILE :STRING-DESIGNATOR
                                          :WITH-GENSYMS :MAKE-GENSYM-LIST
                                          :ONCE-ONLY :ENSURE-FUNCTION :CURRY
-                                         :RCURRY :TRANSPOSE :ZIP))))
+                                         :RCURRY :TAKE :N-GRAMS))))
 
   (defmacro until (expression &body body)
     "Executes `body` until `expression` is true."
@@ -167,17 +167,27 @@ with and `arguments` to `function`."
         (multiple-value-call fn (values-list more) (values-list arguments)))))
   
 
-  (defun transpose (lists)
-    "Analog to matrix transpose for a list of lists given by `lists`."
-    (apply #'mapcar #'list lists))
+  (defun take (n sequence)
+    "Take the first `n` elements from `sequence`."
+    (subseq sequence 0 n))
   
 
-  (defun zip (&rest lists)
-    "Take a tuple of lists and turn them into a list of
-tuples. Equivalent to `unzip`."
-    (transpose lists))
+  (defun n-grams (n sequence)
+    "Find all `n`-grams of the sequence `sequence`."
+    (assert (and (plusp n)
+                 (<= n (length sequence))))
+    
+    (etypecase sequence
+      ;; Lists
+      (list (loop :repeat (1+ (- (length sequence) n))
+                  :for seq :on sequence
+                  :collect (take n seq)))
+      
+      ;; General sequences
+      (sequence (loop :for i :to (- (length sequence) n)
+                      :collect (subseq sequence i (+ i n))))))
   
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (export '(while with-gensyms with-unique-names once-only curry rcurry zip)))
+  (export '(while with-gensyms with-unique-names once-only curry rcurry n-grams)))
 
 ;;;; END OF quickutils.lisp ;;;;

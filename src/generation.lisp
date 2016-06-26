@@ -1,10 +1,21 @@
 (in-package #:mazes.generation)
 
-(defmacro with-cell-active (cell-place &body body)
-  `(prog2
-     (setf (cell-active ,cell-place) t)
-     (progn ,@body)
-     (setf (cell-active ,cell-place) nil)))
+(defmacro with-cell-active (cell &body body)
+  (once-only (cell)
+    `(prog2
+      (setf (cell-active ,cell) t)
+      (progn ,@body)
+      (setf (cell-active ,cell) nil))))
+
+(defun clear-active-group (cells)
+  (loop :for c :in cells :do (setf (cell-active-group c) nil)))
+
+(defun set-active-group (cells)
+  (loop :for c :in cells :do (setf (cell-active-group c) t)))
+
+(defun reset-active-group (old-cells new-cells)
+  (clear-active-group old-cells)
+  (set-active-group new-cells))
 
 
 ;;;; Binary Tree
@@ -62,7 +73,7 @@
                   (cell-link member member-north))
                 (yield)
                 (setf (cell-active member) nil)
-                (loop :for c :in run :do (setf (cell-active-group c) nil))
+                (clear-active-group run)
                 (setf run nil))
               (progn
                 (cell-link cell (cell-east cell))
@@ -96,4 +107,43 @@
 
 (defun aldous-broder (grid)
   (do-generator (_ (aldous-broder-generator grid)))
+  grid)
+
+
+;;;; Wilson
+;;;
+
+(defgenerator wilson-generator (grid)
+  (let ((unvisited (make-set :initial-data (grid-map-cells #'identity grid))))
+    (setf (cell-active-group (set-pop unvisited)) t) ; random initial target
+    (loop :with path = nil
+          :with cell = (set-random unvisited)
+          :while cell :do
+          (with-cell-active cell
+            (let ((path-loop (member cell path)))
+              (setf path (cons cell path))
+              (cond
+                ;; If we've made a loop, trim it off.
+                (path-loop
+                 (reset-active-group path path-loop)
+                 (setf path path-loop
+                       cell (cell-random-neighbor cell)))
+
+                ;; If we've hit a visited cell, carve out the path.
+                ((not (set-contains-p unvisited cell))
+                 (mapc (curry #'apply #'cell-link)
+                       (n-grams 2 path))
+                 (set-remove-all unvisited path)
+                 (setf path nil
+                       cell (set-random unvisited)))
+
+                ;; Otherwise keep going
+                (t
+                 (setf (cell-active-group cell) t)
+                 (setf cell (cell-random-neighbor cell)))))
+            (yield))))
+  (grid-clear-active grid))
+
+(defun wilson (grid)
+  (do-generator (_ (wilson-generator grid)))
   grid)

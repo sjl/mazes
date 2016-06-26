@@ -16,6 +16,17 @@
     #:recursively
     #:recur
     #:hash-keys
+    #:make-set
+    #:set-contains-p
+    #:set-add
+    #:set-remove
+    #:set-add-all
+    #:set-remove-all
+    #:set-random
+    #:set-pop
+    #:set-empty-p
+    #:hash-set
+    #:set-clear
     #:%))
 
 (defpackage #:mazes.fps
@@ -44,6 +55,7 @@
     #:cell-linked-east-p
     #:cell-linked-west-p
     #:cell-neighbors
+    #:cell-random-neighbor
     #:cell-north
     #:cell-south
     #:cell-east
@@ -87,7 +99,9 @@
     #:sidewinder
     #:sidewinder-generator
     #:aldous-broder
-    #:aldous-broder-generator)
+    #:aldous-broder-generator
+    #:wilson
+    #:wilson-generator)
   (:import-from #:snakes
     #:defgenerator
     #:do-generator

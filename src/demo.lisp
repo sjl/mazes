@@ -9,7 +9,7 @@
 (defparameter *center-x* (/ *width* 2))
 (defparameter *center-y* (/ *height* 2))
 (defparameter *maze-size* 700)
-(defvar *generator* #'sidewinder-generator)
+(defvar *generator* 'sidewinder-generator)
 (defvar *instant* nil)
 (defvar *show-longest* nil)
 (defvar *show-colors* nil)
@@ -148,7 +148,7 @@
      (frame 0)
      (log " ")
      ;; Variables
-     (grid (make-grid 25 25))
+     (grid (make-grid 15 15))
      (gen (funcall *generator* grid))
      (finished-generating nil)
      (distances nil)
@@ -163,7 +163,7 @@
   (with-setup
     ;; Maze
     (when (and (not finished-generating)
-               (dividesp frame 5))
+               (dividesp frame 1))
       (when *instant*
         (while (not (funcall gen))))
       (when (funcall gen)
@@ -172,7 +172,7 @@
     (draw-maze sketch::instance)
     ;; UI
     (with-font *ui-font*
-      (text "algorithm: [a]ldous-broder [b]inary tree [s]idewinder"
+      (text "algorithm: [a]ldous-broder [b]inary tree [s]idewinder [w]ilson"
             (+ (- *center-x*) 5) (- *center-y* 40))
       (text "display: [C]olor distances [L]ongest path [I]nstant generation"
             (+ (- *center-x*) 5) (- *center-y* 22)))
@@ -281,9 +281,10 @@
     (:scancode-lalt (setf *option* t))
     (:scancode-ralt (setf *option* t))
     ;;
-    (:scancode-s (setf *generator* #'sidewinder-generator))
-    (:scancode-b (setf *generator* #'binary-tree-generator))
-    (:scancode-a (setf *generator* #'aldous-broder-generator))
+    (:scancode-s (setf *generator* 'sidewinder-generator))
+    (:scancode-b (setf *generator* 'binary-tree-generator))
+    (:scancode-a (setf *generator* 'aldous-broder-generator))
+    (:scancode-w (setf *generator* 'wilson-generator))
     (:scancode-l (if *shift*
                    (zap% *show-longest* #'not %)
                    nil))

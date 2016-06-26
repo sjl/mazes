@@ -53,6 +53,9 @@
   (with-slots (north south east west) cell
     (full-list north south east west)))
 
+(defun cell-random-neighbor (cell)
+  (random-elt (cell-neighbors cell)))
+
 
 (defmethod print-object ((cell cell) stream)
   (print-unreadable-object (cell stream :type t :identity nil)
@@ -83,7 +86,7 @@
 (defun grid-map-cells (fn grid)
   (with-slots (cells) grid
     (loop :for i :from 0 :below (array-total-size cells)
-          :do (funcall fn (row-major-aref cells i)))))
+          :collect (funcall fn (row-major-aref cells i)))))
 
 (defun grid-map-rows (fn grid)
   (with-slots (rows cols cells) grid

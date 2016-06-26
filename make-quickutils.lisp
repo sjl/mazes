@@ -14,6 +14,6 @@
                :rcurry
                ; :zip
                ; :compose
-               ; :n-grams
+               :n-grams
                )
   :package "MAZES.QUICKUTILS")
