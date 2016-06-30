@@ -11,6 +11,7 @@
                #:sketch
                #:sb-cga
                #:snakes
+               #:iterate
                #:cl-strings
                #:cl-arrows)
 

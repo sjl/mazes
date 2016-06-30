@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:WHILE :WITH-GENSYMS :ONCE-ONLY :CURRY :RCURRY :N-GRAMS) :ensure-package T :package "MAZES.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:WITH-GENSYMS :ONCE-ONLY :CURRY :RCURRY :N-GRAMS) :ensure-package T :package "MAZES.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "MAZES.QUICKUTILS")
@@ -13,23 +13,10 @@
 (in-package "MAZES.QUICKUTILS")
 
 (when (boundp '*utilities*)
-  (setf *utilities* (union *utilities* '(:UNTIL :WHILE :STRING-DESIGNATOR
-                                         :WITH-GENSYMS :MAKE-GENSYM-LIST
-                                         :ONCE-ONLY :ENSURE-FUNCTION :CURRY
-                                         :RCURRY :TAKE :N-GRAMS))))
-
-  (defmacro until (expression &body body)
-    "Executes `body` until `expression` is true."
-    `(do ()
-         (,expression)
-       ,@body))
-  
-
-  (defmacro while (expression &body body)
-    "Executes `body` while `expression` is true."
-    `(until (not ,expression)
-       ,@body))
-  
+  (setf *utilities* (union *utilities* '(:STRING-DESIGNATOR :WITH-GENSYMS
+                                         :MAKE-GENSYM-LIST :ONCE-ONLY
+                                         :ENSURE-FUNCTION :CURRY :RCURRY :TAKE
+                                         :N-GRAMS))))
 
   (deftype string-designator ()
     "A string designator type. A string designator is either a string, a symbol,
@@ -188,6 +175,6 @@ with and `arguments` to `function`."
                       :collect (subseq sequence i (+ i n))))))
   
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (export '(while with-gensyms with-unique-names once-only curry rcurry n-grams)))
+  (export '(with-gensyms with-unique-names once-only curry rcurry n-grams)))
 
 ;;;; END OF quickutils.lisp ;;;;

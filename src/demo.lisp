@@ -148,7 +148,7 @@
      (frame 0)
      (log " ")
      ;; Variables
-     (grid (make-grid 15 15))
+     (grid (make-grid 20 20))
      (gen (funcall *generator* grid))
      (finished-generating nil)
      (distances nil)
@@ -163,16 +163,16 @@
   (with-setup
     ;; Maze
     (when (and (not finished-generating)
-               (dividesp frame 1))
+               (dividesp frame 4))
       (when *instant*
-        (while (not (funcall gen))))
+        (iterate (while (not (funcall gen)))))
       (when (funcall gen)
         (setf finished-generating t
               longest-path (find-longest-path grid))))
     (draw-maze sketch::instance)
     ;; UI
     (with-font *ui-font*
-      (text "algorithm: [a]ldous-broder [b]inary tree [s]idewinder [w]ilson"
+      (text "algorithm: [a]ldous-broder [b]inary tree [h]unt and kill [s]idewinder [w]ilson"
             (+ (- *center-x*) 5) (- *center-y* 40))
       (text "display: [C]olor distances [L]ongest path [I]nstant generation"
             (+ (- *center-x*) 5) (- *center-y* 22)))
@@ -285,6 +285,7 @@
     (:scancode-b (setf *generator* 'binary-tree-generator))
     (:scancode-a (setf *generator* 'aldous-broder-generator))
     (:scancode-w (setf *generator* 'wilson-generator))
+    (:scancode-h (setf *generator* 'hunt-and-kill-generator))
     (:scancode-l (if *shift*
                    (zap% *show-longest* #'not %)
                    nil))

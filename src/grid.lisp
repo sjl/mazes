@@ -56,6 +56,13 @@
 (defun cell-random-neighbor (cell)
   (random-elt (cell-neighbors cell)))
 
+(defun cell-random-unlinked-neighbor (cell)
+  (random-elt (set-difference (cell-neighbors cell)
+                              (cell-links cell))))
+
+(defun cell-random-linked-neighbor (cell)
+  (random-elt (cell-links cell)))
+
 
 (defmethod print-object ((cell cell) stream)
   (print-unreadable-object (cell stream :type t :identity nil)

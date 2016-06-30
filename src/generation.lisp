@@ -1,17 +1,21 @@
 (in-package #:mazes.generation)
 
-(defmacro with-cell-active (cell &body body)
+(defmacro with-cell-active ((cell &rest options) &body body)
   (once-only (cell)
     `(prog2
-      (setf (cell-active ,cell) t)
+      (progn (setf (cell-active ,cell) t)
+             ,(when (member :mark-group options)
+                `(setf (cell-active-group ,cell) t)))
       (progn ,@body)
       (setf (cell-active ,cell) nil))))
 
 (defun clear-active-group (cells)
-  (loop :for c :in cells :do (setf (cell-active-group c) nil)))
+  (iterate (for c :in cells)
+           (setf (cell-active-group c) nil)))
 
 (defun set-active-group (cells)
-  (loop :for c :in cells :do (setf (cell-active-group c) t)))
+  (iterate (for c :in cells)
+           (setf (cell-active-group c) t)))
 
 (defun reset-active-group (old-cells new-cells)
   (clear-active-group old-cells)
@@ -28,7 +32,7 @@
 
 (defgenerator binary-tree-generator (grid)
   (grid-loop-cells cell grid
-    (with-cell-active cell
+    (with-cell-active (cell)
       (let ((other (random-elt (full-list (cell-north cell)
                                           (cell-east cell)))))
         (when other
@@ -54,30 +58,29 @@
 
 (defgenerator sidewinder-generator (grid)
   (grid-loop-rows row grid
-    (loop :with run = nil
-          :for cell :across row
-          :for at-east-bound = (null (cell-east cell))
-          :for at-north-bound = (null (cell-north cell))
-          :for should-close = (or at-east-bound
-                                  (and (not at-north-bound)
-                                       (randomp)))
-          :do
-          (with-cell-active cell
-            (setf (cell-active-group cell) t)
-            (push cell run)
-            (if should-close
-              (let* ((member (random-elt run))
-                     (member-north (cell-north member)))
-                (when member-north
-                  (setf (cell-active member) t)
-                  (cell-link member member-north))
-                (yield)
-                (setf (cell-active member) nil)
-                (clear-active-group run)
-                (setf run nil))
-              (progn
-                (cell-link cell (cell-east cell))
-                (yield)))))))
+    (iterate
+      (with run = nil)
+      (for cell :in-vector row)
+      (for at-east-bound = (null (cell-east cell)))
+      (for at-north-bound = (null (cell-north cell)))
+      (for should-close = (or at-east-bound
+                              (and (not at-north-bound)
+                                   (randomp))))
+      (with-cell-active (cell :mark-group)
+        (push cell run)
+        (if should-close
+          (let* ((member (random-elt run))
+                 (member-north (cell-north member)))
+            (when member-north
+              (with-cell-active (member-north)
+                (cell-link member member-north)
+                (yield)))
+            (yield)
+            (clear-active-group run)
+            (setf run nil))
+          (progn
+            (cell-link cell (cell-east cell))
+            (yield)))))))
 
 (defun sidewinder (grid)
   (do-generator (_ (sidewinder-generator grid)))
@@ -94,15 +97,15 @@
 (defgenerator aldous-broder-generator (grid)
   (let ((cell (grid-random-cell grid))
         (unvisited (1- (grid-size grid))))
-    (while (plusp unvisited)
-      (setf (cell-active-group cell) t)
-      (let ((neighbor (random-elt (cell-neighbors cell))))
-        (with-cell-active cell
-          (when (null (cell-links neighbor))
-            (cell-link cell neighbor)
-            (decf unvisited))
-          (yield))
-        (setf cell neighbor))))
+    (iterate (while (plusp unvisited))
+             (setf (cell-active-group cell) t)
+             (let ((neighbor (random-elt (cell-neighbors cell))))
+               (with-cell-active (cell)
+                 (when (null (cell-links neighbor))
+                   (cell-link cell neighbor)
+                   (decf unvisited))
+                 (yield))
+               (setf cell neighbor))))
   (grid-clear-active grid))
 
 (defun aldous-broder (grid)
@@ -111,39 +114,83 @@
 
 
 ;;;; Wilson
+;;; Wilson's algorithm works by initializing one random cell to be visited, then
+;;; starting at some *other* random cell and walking randomly.  Once the path
+;;; hits the visited cell, it is linked together and another random unvisited
+;;; cell is chosed.
 ;;;
+;;; If a loop in the path is formed before the path manages to hit a visited
+;;; cell, the loop is "erased" and the walk restarts from the looping point.
 
 (defgenerator wilson-generator (grid)
-  (let ((unvisited (make-set :initial-data (grid-map-cells #'identity grid))))
-    (setf (cell-active-group (set-pop unvisited)) t) ; random initial target
-    (loop :with path = nil
-          :with cell = (set-random unvisited)
-          :while cell :do
-          (with-cell-active cell
-            (let ((path-loop (member cell path)))
-              (setf path (cons cell path))
-              (cond
-                ;; If we've made a loop, trim it off.
-                (path-loop
-                 (reset-active-group path path-loop)
-                 (setf path path-loop
-                       cell (cell-random-neighbor cell)))
+  (iterate
+    (with unvisited = (make-set :initial-data (grid-map-cells #'identity grid)))
+    (initially (setf (cell-active-group (set-pop unvisited)) t))
+    (with path = nil)
+    (with cell = (set-random unvisited))
+    (while cell)
+    (with-cell-active (cell :mark-group)
+      (let ((path-loop (member cell path)))
+        (setf path (cons cell path))
+        (cond
+          ;; If we've made a loop, trim it off.
+          (path-loop
+           (reset-active-group path path-loop)
+           (setf path path-loop
+                 cell (cell-random-neighbor cell)))
 
-                ;; If we've hit a visited cell, carve out the path.
-                ((not (set-contains-p unvisited cell))
-                 (mapc (curry #'apply #'cell-link)
-                       (n-grams 2 path))
-                 (set-remove-all unvisited path)
-                 (setf path nil
-                       cell (set-random unvisited)))
+          ;; If we've hit a visited cell, carve out the path.
+          ((not (set-contains-p unvisited cell))
+           (mapc (curry #'apply #'cell-link)
+                 (n-grams 2 path))
+           (set-remove-all unvisited path)
+           (setf path nil
+                 cell (set-random unvisited)))
 
-                ;; Otherwise keep going
-                (t
-                 (setf (cell-active-group cell) t)
-                 (setf cell (cell-random-neighbor cell)))))
-            (yield))))
+          ;; Otherwise keep going
+          (t
+           (setf cell (cell-random-neighbor cell)))))
+      (yield)))
   (grid-clear-active grid))
 
 (defun wilson (grid)
   (do-generator (_ (wilson-generator grid)))
+  grid)
+
+
+;;;; Hunt and Kill
+;;;
+
+(defgenerator hunt-and-kill-generator (grid)
+  (labels ((visited-p (cell)
+             (not (null (cell-links cell))))
+           (random-visited-neighbor (cell)
+             (random-elt (remove-if-not #'visited-p (cell-neighbors cell))))
+           (random-unvisited-neighbor (cell)
+             (random-elt (remove-if #'visited-p (cell-neighbors cell))))
+           (hunt ()
+             (grid-loop-cells cell grid
+               (when (and (not (visited-p cell))
+                          (some #'visited-p (cell-neighbors cell)))
+                 (return cell)))))
+    (iterate
+      (with cell = (grid-ref grid 0 0))
+      (initially (setf (cell-active-group cell) t))
+      (for next = (random-unvisited-neighbor cell))
+      (if next
+        (with-cell-active (next :mark-group)
+          (cell-link cell next)
+          (setf cell next)
+          (yield))
+        (let ((new-cell (hunt)))
+          (if (null new-cell)
+            (finish)
+            (with-cell-active (new-cell :mark-group)
+              (cell-link new-cell (random-visited-neighbor new-cell))
+              (setf cell new-cell)
+              (yield)))))))
+  (grid-clear-active grid))
+
+(defun hunt-and-kill (grid)
+  (do-generator (_ (hunt-and-kill-generator grid)))
   grid)

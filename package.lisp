@@ -1,6 +1,7 @@
 (defpackage #:mazes.utils
   (:use
     #:cl
+    #:iterate
     #:sketch
     #:mazes.quickutils)
   (:export
@@ -27,21 +28,27 @@
     #:set-empty-p
     #:hash-set
     #:set-clear
-    #:%))
+    #:%)
+  (:shadowing-import-from #:iterate
+    #:in))
 
 (defpackage #:mazes.fps
   (:use
     #:cl
+    #:iterate
     #:sketch
     #:mazes.quickutils
     #:mazes.utils)
   (:export
     #:with-fps
-    #:draw-fps))
+    #:draw-fps)
+  (:shadowing-import-from #:iterate
+    #:in))
 
 (defpackage #:mazes.grid
   (:use
     #:cl
+    #:iterate
     #:mazes.quickutils
     #:mazes.utils)
   (:export
@@ -56,6 +63,8 @@
     #:cell-linked-west-p
     #:cell-neighbors
     #:cell-random-neighbor
+    #:cell-random-unlinked-neighbor
+    #:cell-random-linked-neighbor
     #:cell-north
     #:cell-south
     #:cell-east
@@ -90,6 +99,7 @@
 (defpackage #:mazes.generation
   (:use
     #:cl
+    #:iterate
     #:mazes.quickutils
     #:mazes.utils
     #:mazes.grid)
@@ -101,7 +111,9 @@
     #:aldous-broder
     #:aldous-broder-generator
     #:wilson
-    #:wilson-generator)
+    #:wilson-generator
+    #:hunt-and-kill
+    #:hunt-and-kill-generator)
   (:import-from #:snakes
     #:defgenerator
     #:do-generator
@@ -111,6 +123,7 @@
   (:use
     #:cl
     #:sketch
+    #:iterate
     #:cl-arrows
     #:mazes.grid
     #:mazes.generation
@@ -118,5 +131,7 @@
     #:mazes.utils
     #:mazes.fps)
   (:import-from #:snakes
-    #:do-generator))
+    #:do-generator)
+  (:shadowing-import-from #:iterate
+    #:in))
 
