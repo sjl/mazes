@@ -86,6 +86,7 @@
     #:row-of-grid
     #:grid-size
     #:grid-random-cell
+    #:grid-dead-end-count
     #:distance-map
     #:make-dm
     #:dm-distance

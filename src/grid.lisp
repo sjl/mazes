@@ -158,6 +158,12 @@
                  (cell-active-group cell) nil)))
 
 
+(defun grid-dead-end-count (grid)
+  (iterate
+    (for cell :in-grid grid)
+    (counting (= 1 (length (cell-links cell))))))
+
+
 (defmethod print-object ((grid grid) stream)
   (print-unreadable-object
       (grid stream :type t :identity nil)

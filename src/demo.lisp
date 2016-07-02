@@ -2,6 +2,8 @@
 
 ;;;; Config
 (setf *bypass-cache* t)
+(defparameter *ui-font* nil)
+
 
 (defparameter *width* 800)
 (defparameter *height* 800)
@@ -12,6 +14,7 @@
 (defvar *generator* 'sidewinder-generator)
 (defvar *instant* nil)
 (defvar *show-longest* nil)
+(defvar *show-stats* nil)
 (defvar *show-colors* nil)
 (defvar *cell-size* nil)
 
@@ -32,8 +35,9 @@
 (defmacro with-setup (&body body)
   `(with-fps
     (background (gray 0.1))
-    (with-centered-coords
-      ,@body)))
+    (with-font *ui-font*
+      (with-centered-coords
+        ,@body))))
 
 (defun cell-size (grid)
   (truncate (/ *maze-size*
@@ -109,9 +113,20 @@
            (when (cell-active cell)
              (with-pen *active-pen* (draw-cell cell)))))
 
+(defun draw-stats (instance)
+  (when *show-stats*
+    (with-slots (grid) instance
+      (text (format nil "dead-ends: ~D"
+                    (grid-dead-end-count grid))
+            150 0))))
+
 
 (defun draw-maze (instance)
   (with-slots (finished-generating grid) instance
+    (when finished-generating
+      (in-context
+        (translate (- *center-x*) (- *center-y*))
+        (draw-stats instance)))
     (in-context
       (translate (/ (* (grid-cols grid) *cell-size*) -2)
                  (/ (* (grid-rows grid) *cell-size*) -2))
@@ -136,7 +151,8 @@
             (when (not (cell-linked-south-p cell))
               (line x1 y2 x2 y2))))))))
 
-(defparameter *ui-font* nil)
+
+
 
 (defun find-longest-path (grid)
   (let ((distances (-> (grid-ref grid 0 0)
@@ -162,7 +178,8 @@
      )
   ;; Setup
   (setf *cell-size* (cell-size grid))
-  (setf *ui-font* (make-font :color (gray 0.8) :size 14))
+  (when (null *ui-font*)
+    (setf *ui-font* (make-font :color (gray 0.8) :size 14)))
   (with-setup
     ;; Maze
     (when (and (not finished-generating)
@@ -176,9 +193,9 @@
     ;; UI
     (with-font *ui-font*
       (text "algorithm: [a]ldous-broder [b]inary tree [h]unt and kill [s]idewinder [w]ilson"
-            (+ (- *center-x*) 5) (- *center-y* 40))
-      (text "display: [C]olor distances [L]ongest path [I]nstant generation"
-            (+ (- *center-x*) 5) (- *center-y* 22)))
+            (+ (- *center-x*) 5) (- *center-y* 44))
+      (text "display: [C]olor distances [I]nstant generation [L]ongest path [S]tats"
+            (+ (- *center-x*) 5) (- *center-y* 24)))
     ;;
     (incf frame)
     ))
@@ -270,6 +287,9 @@
                         ,@body)))
            pairs)))))
 
+(defmacro toggle (place)
+  `(zap% ,place #'not %))
+
 
 (defun keydown (instance scancode)
   (declare (ignorable instance))
@@ -284,19 +304,21 @@
     (:scancode-lalt (setf *option* t))
     (:scancode-ralt (setf *option* t))
     ;;
-    (:scancode-s (setf *generator* 'sidewinder-generator))
+    (:scancode-s (if *shift*
+                   (toggle *show-stats*)
+                   (setf *generator* 'sidewinder-generator)))
     (:scancode-b (setf *generator* 'binary-tree-generator))
     (:scancode-a (setf *generator* 'aldous-broder-generator))
     (:scancode-w (setf *generator* 'wilson-generator))
     (:scancode-h (setf *generator* 'hunt-and-kill-generator))
     (:scancode-l (if *shift*
-                   (zap% *show-longest* #'not %)
+                   (toggle *show-longest*)
                    nil))
     (:scancode-c (if *shift*
-                   (zap% *show-colors* #'not %)
+                   (toggle *show-colors*)
                    nil))
     (:scancode-i (if *shift*
-                   (zap% *instant* #'not %)
+                   (toggle *instant*)
                    nil))
     ;;
     ))
