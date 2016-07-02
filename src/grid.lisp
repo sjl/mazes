@@ -90,39 +90,30 @@
     grid))
 
 
-(defun grid-map-cells (fn grid)
-  (with-slots (cells) grid
-    (loop :for i :from 0 :below (array-total-size cells)
-          :collect (funcall fn (row-major-aref cells i)))))
+(defun grid-row (grid row)
+  (let ((cells (grid-cells grid)))
+    (make-array (grid-cols grid)
+      :element-type 'cell
+      :displaced-to cells
+      :displaced-index-offset (array-row-major-index cells row 0))))
 
-(defun grid-map-rows (fn grid)
-  (with-slots (rows cols cells) grid
-    (loop :for row :from 0 :below rows
-          :do (funcall fn (make-array cols
-                            :element-type 'cell
-                            :displaced-to cells
-                            :displaced-index-offset
-                            (array-row-major-index cells row 0))))))
 
-(defmacro grid-loop-cells (cell-symbol grid &body body)
-  (with-gensyms (i)
-    (once-only (grid)
-      `(loop :for ,i :from 0 :below (array-total-size (grid-cells ,grid))
-        :for ,cell-symbol = (row-major-aref (grid-cells ,grid) ,i)
-        :do (progn ,@body)))))
+(defclause-sequence IN-GRID nil
+  :access-fn (lambda (grid index)
+               (row-major-aref (grid-cells grid) index))
+  :size-fn (lambda (grid)
+             (array-total-size (grid-cells grid)))
+  :sequence-type 'grid
+  :element-type 'cell
+  :element-doc-string "All cells in a grid")
 
-(defmacro grid-loop-rows (row-symbol grid &body body)
-  (with-gensyms (row cols)
-    (once-only (grid)
-      `(loop
-        :with ,cols = (grid-cols ,grid)
-        :for ,row :from 0 :below (grid-rows ,grid)
-        :for ,row-symbol = (make-array ,cols
-                             :element-type 'cell
-                             :displaced-to (grid-cells ,grid)
-                             :displaced-index-offset
-                             (array-row-major-index (grid-cells grid) ,row 0))
-        :do (progn ,@body)))))
+(defclause-sequence ROW-OF-GRID nil
+  :access-fn #'grid-row
+  :size-fn (lambda (grid)
+             (array-dimension (grid-cells grid) 0))
+  :sequence-type 'grid
+  :element-type '(vector cell)
+  :element-doc-string "All rows in a grid")
 
 
 (defun grid-size (grid)
@@ -152,7 +143,8 @@
                         (make-cell r c)))))))
 
 (defmethod grid-configure-cells ((grid grid))
-  (grid-loop-cells cell grid
+  (iterate
+    (for cell :in-grid grid)
     (with-slots (row col north south east west) cell
       (setf north (grid-ref grid (1- row) col)
             south (grid-ref grid (1+ row) col)
@@ -161,9 +153,9 @@
 
 
 (defun grid-clear-active (grid)
-  (grid-loop-cells cell grid
-    (setf (cell-active cell) nil
-          (cell-active-group cell) nil)))
+  (iterate (for cell :in-grid grid)
+           (setf (cell-active cell) nil
+                 (cell-active-group cell) nil)))
 
 
 (defmethod print-object ((grid grid) stream)
@@ -171,7 +163,8 @@
       (grid stream :type t :identity nil)
     (format stream "~%+~A~%"
             (cl-strings:repeat "---+" (grid-cols grid)))
-    (grid-loop-rows row grid
+    (iterate
+      (for row :row-of-grid grid)
       (let ((top "|")
             (bottom "+"))
         (loop :for contents :across row

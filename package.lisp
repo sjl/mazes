@@ -82,10 +82,8 @@
     #:grid-clear-active
     #:make-grid
     #:grid-size
-    #:grid-map-cells
-    #:grid-map-rows
-    #:grid-loop-cells
-    #:grid-loop-rows
+    #:in-grid
+    #:row-of-grid
     #:grid-size
     #:grid-random-cell
     #:distance-map

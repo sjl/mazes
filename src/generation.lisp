@@ -31,12 +31,13 @@
 ;;; picked, which results in signature long corridors on those edges.
 
 (defgenerator binary-tree-generator (grid)
-  (grid-loop-cells cell grid
+  (iterate
+    (for cell :in-grid grid)
+    (for other = (random-elt (full-list (cell-north cell)
+                                        (cell-east cell))))
     (with-cell-active (cell)
-      (let ((other (random-elt (full-list (cell-north cell)
-                                          (cell-east cell)))))
-        (when other
-          (cell-link cell other)))
+      (when other
+        (cell-link cell other))
       (yield))))
 
 (defun binary-tree (grid)
@@ -57,7 +58,8 @@
 ;;; results in a signature long corridor along the top of the maze.
 
 (defgenerator sidewinder-generator (grid)
-  (grid-loop-rows row grid
+  (iterate
+    (for row :row-of-grid grid)
     (iterate
       (with run = nil)
       (for cell :in-vector row)
@@ -124,7 +126,8 @@
 
 (defgenerator wilson-generator (grid)
   (iterate
-    (with unvisited = (make-set :initial-data (grid-map-cells #'identity grid)))
+    (with unvisited = (make-set :initial-data (iterate (for cell :in-grid grid)
+                                                       (collect cell))))
     (initially (setf (cell-active-group (set-pop unvisited)) t))
     (with path = nil)
     (with cell = (set-random unvisited))
@@ -169,10 +172,11 @@
            (random-unvisited-neighbor (cell)
              (random-elt (remove-if #'visited-p (cell-neighbors cell))))
            (hunt ()
-             (grid-loop-cells cell grid
-               (when (and (not (visited-p cell))
-                          (some #'visited-p (cell-neighbors cell)))
-                 (return cell)))))
+             (iterate
+               (for cell :in-grid grid)
+               (finding cell :such-that
+                        (and (not (visited-p cell))
+                             (some #'visited-p (cell-neighbors cell)))))))
     (iterate
       (with cell = (grid-ref grid 0 0))
       (initially (setf (cell-active-group cell) t))

@@ -79,7 +79,8 @@
                             (grid-ref grid 0 0))))
            (max (dm-distance distances (dm-max distances))))
       (when (plusp max)
-        (grid-loop-cells cell grid
+        (iterate
+          (for cell :in-grid grid)
           (when-let (distance (dm-distance distances cell))
             (with-pen
                 (make-pen :fill (lerp-color
@@ -102,24 +103,26 @@
       (when end (draw-cell end)))))
 
 (defun draw-active (instance)
-  (grid-loop-cells cell (slot-value instance 'grid)
-    (when (cell-active-group cell)
-      (with-pen *active-group-pen* (draw-cell cell)))
-    (when (cell-active cell)
-      (with-pen *active-pen* (draw-cell cell)))))
+  (iterate (for cell :in-grid (slot-value instance 'grid))
+           (when (cell-active-group cell)
+             (with-pen *active-group-pen* (draw-cell cell)))
+           (when (cell-active cell)
+             (with-pen *active-pen* (draw-cell cell)))))
 
 
 (defun draw-maze (instance)
-  (with-slots (grid) instance
+  (with-slots (finished-generating grid) instance
     (in-context
       (translate (/ (* (grid-cols grid) *cell-size*) -2)
                  (/ (* (grid-rows grid) *cell-size*) -2))
-      (draw-colors instance)
-      (draw-longest instance)
-      (draw-path instance)
+      (when finished-generating
+        (draw-colors instance)
+        (draw-longest instance)
+        (draw-path instance))
       (draw-active instance)
       (with-pen *wall-pen*
-        (grid-loop-cells cell grid
+        (iterate
+          (for cell :in-grid grid)
           (let ((x1 (cell-x cell))
                 (y1 (cell-y cell))
                 (x2 (cell-x cell 1))
