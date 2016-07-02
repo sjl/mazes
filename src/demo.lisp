@@ -346,5 +346,30 @@
     (t nil)))
 
 
+;;;; Statistics
+(defun run-stats (&key (iterations 100) (size 15))
+  (iterate
+    (for algorithm :in '(binary-tree sidewinder aldous-broder wilson
+                         hunt-and-kill))
+    (iterate
+      (repeat iterations)
+      (for grid = (make-grid size size))
+      (funcall algorithm grid)
+      (timing run-time
+              :since-start-into time-total
+              :per-iteration-into time-single)
+      (averaging (grid-dead-end-count grid) :into dead-ends)
+      (averaging time-single :into time-average)
+      (finally
+        (format t "~A (~D by ~:*~D)~%" algorithm size)
+        (format t "Dead Ends:        ~10,2F~%" dead-ends)
+        (format t "Average Run Time: ~10,2Fms~%"
+                (/ time-average internal-time-units-per-second 1/1000))
+        (format t "Total Run Time:   ~10,2Fms~%"
+                (/ time-total internal-time-units-per-second 1/1000))
+        (format t "~%")
+        (finish-output)))))
+
+
 ;;;; Run
 ; (defparameter *demo* (make-instance 'demo))

@@ -125,35 +125,35 @@
 ;;; cell, the loop is "erased" and the walk restarts from the looping point.
 
 (defgenerator wilson-generator (grid)
-  (iterate
-    (with unvisited = (make-set :initial-data (iterate (for cell :in-grid grid)
-                                                       (collect cell))))
-    (initially (setf (cell-active-group (set-pop unvisited)) t))
-    (with path = nil)
-    (with cell = (set-random unvisited))
-    (while cell)
-    (with-cell-active (cell :mark-group)
-      (let ((path-loop (member cell path)))
-        (setf path (cons cell path))
-        (cond
-          ;; If we've made a loop, trim it off.
-          (path-loop
-           (reset-active-group path path-loop)
-           (setf path path-loop
-                 cell (cell-random-neighbor cell)))
+  (let ((unvisited (make-set :initial-data (iterate (for cell :in-grid grid)
+                                                    (collect cell)))))
+    (setf (cell-active-group (set-pop unvisited)) t)
+    (iterate
+      (with path = nil)
+      (with cell = (set-random unvisited))
+      (while cell)
+      (with-cell-active (cell :mark-group)
+        (let ((path-loop (member cell path)))
+          (setf path (cons cell path))
+          (cond
+            ;; If we've made a loop, trim it off.
+            (path-loop
+             (reset-active-group path path-loop)
+             (setf path path-loop
+                   cell (cell-random-neighbor cell)))
 
-          ;; If we've hit a visited cell, carve out the path.
-          ((not (set-contains-p unvisited cell))
-           (mapc (curry #'apply #'cell-link)
-                 (n-grams 2 path))
-           (set-remove-all unvisited path)
-           (setf path nil
-                 cell (set-random unvisited)))
+            ;; If we've hit a visited cell, carve out the path.
+            ((not (set-contains-p unvisited cell))
+             (mapc (curry #'apply #'cell-link)
+                   (n-grams 2 path))
+             (set-remove-all unvisited path)
+             (setf path nil
+                   cell (set-random unvisited)))
 
-          ;; Otherwise keep going
-          (t
-           (setf cell (cell-random-neighbor cell)))))
-      (yield)))
+            ;; Otherwise keep going
+            (t
+             (setf cell (cell-random-neighbor cell)))))
+        (yield))))
   (grid-clear-active grid))
 
 (defun wilson (grid)

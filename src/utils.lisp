@@ -176,3 +176,37 @@
   (print-unreadable-object (set stream :type t)
     (format stream "~{~S~^ ~}"
             (hash-keys (slot-value set 'data)))))
+
+
+;;;; Iterate
+(defmacro-clause (AVERAGING expr &optional INTO var)
+  (with-gensyms (count)
+    (let ((average (or var (gensym "average"))))
+      `(progn
+        (for ,average
+             :first ,expr
+             ;; continuously recompute the running average instead of keeping
+             ;; a running total to avoid bignums when possible
+             :then (/ (+ (* ,average ,count)
+                         ,expr)
+                      (1+ ,count)))
+        (for ,count :from 1)
+        ,(when (null var)
+           ;; todo handle this better
+           `(finally (return ,average)))))))
+
+(defmacro-clause (TIMING time-type &optional SINCE-START-INTO var PER-ITERATION-INTO per)
+  (let ((timing-function (ecase time-type
+                           ((real-time) #'get-internal-real-time)
+                           ((run-time) #'get-internal-run-time)))
+        (since (or var (gensym))))
+    (with-gensyms (start-time current-time previous-time)
+      `(progn
+        (with ,start-time = (funcall ,timing-function))
+        (for ,current-time = (funcall ,timing-function))
+        (for ,previous-time :previous ,current-time :initially ,start-time)
+        (for ,since = (- ,current-time ,start-time))
+        ,(when per
+           `(for ,per = (- ,current-time ,previous-time)))
+        ,(when (and (null var) (null per))
+           `(finally (return ,since)))))))

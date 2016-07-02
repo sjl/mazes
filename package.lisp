@@ -28,6 +28,12 @@
     #:set-empty-p
     #:hash-set
     #:set-clear
+    #:averaging
+    #:timing
+    #:real-time
+    #:run-time
+    #:since-start-into
+    #:per-iteration-into
     #:%)
   (:shadowing-import-from #:iterate
     #:in))
