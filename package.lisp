@@ -118,7 +118,10 @@
     #:wilson
     #:wilson-generator
     #:hunt-and-kill
-    #:hunt-and-kill-generator)
+    #:hunt-and-kill-generator
+    #:recursive-backtracker
+    #:recursive-backtracker-generator
+    )
   (:import-from #:snakes
     #:defgenerator
     #:do-generator

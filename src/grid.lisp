@@ -108,7 +108,7 @@
   :element-doc-string "All cells in a grid")
 
 (defclause-sequence ROW-OF-GRID nil
-  :access-fn #'grid-row
+  :access-fn 'grid-row
   :size-fn (lambda (grid)
              (array-dimension (grid-cells grid) 0))
   :sequence-type 'grid

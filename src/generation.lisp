@@ -162,7 +162,13 @@
 
 
 ;;;; Hunt and Kill
+;;; The Hunt and Kill algorithm starts by carving out a random path, always
+;;; selecting unvisited cells.
 ;;;
+;;; When it carves itself into a dead end it scans the grid for the unvisited
+;;; cell that has one or more visited neighbors.  It picks a random visited
+;;; neighbor and links this new cell to it, then continues the carving from
+;;; there.
 
 (defgenerator hunt-and-kill-generator (grid)
   (labels ((visited-p (cell)
@@ -197,4 +203,34 @@
 
 (defun hunt-and-kill (grid)
   (do-generator (_ (hunt-and-kill-generator grid)))
+  grid)
+
+
+;;;; Recursive Backtracker
+;;; The Recursive Backtracker algorithm starts by carving out a random path,
+;;; always selecting unvisited nodes.  When it carves itself into a dead end, it
+;;; backtracks along the path until it hits the first cell that DOES have
+;;; neighbors, and continues from there.
+
+(defgenerator recursive-backtracker-generator (grid)
+  (labels ((visited-p (cell)
+             (not (null (cell-links cell))))
+           (random-unvisited-neighbor (cell)
+             (random-elt (remove-if #'visited-p (cell-neighbors cell)))))
+    (iterate
+      (with stack = (list (grid-ref grid 0 0)))
+      (while stack)
+      (for cell = (first stack))
+      (for neighbor = (random-unvisited-neighbor cell))
+      (with-cell-active (cell :mark-group)
+        (yield)
+        (if neighbor
+          (progn (cell-link cell neighbor)
+                 (push neighbor stack))
+          (progn (setf (cell-active-group cell) nil)
+                 (pop stack))))))
+  (grid-clear-active grid))
+
+(defun recursive-backtracker (grid)
+  (do-generator (_ (recursive-backtracker-generator grid)))
   grid)

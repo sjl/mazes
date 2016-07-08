@@ -152,8 +152,6 @@
               (line x1 y2 x2 y2))))))))
 
 
-
-
 (defun find-longest-path (grid)
   (let ((distances (-> (grid-ref grid 0 0)
                      cell-distance-map
@@ -183,7 +181,7 @@
   (with-setup
     ;; Maze
     (when (and (not finished-generating)
-               (dividesp frame 4))
+               (dividesp frame 3))
       (when *instant*
         (iterate (while (not (funcall gen)))))
       (when (funcall gen)
@@ -192,7 +190,7 @@
     (draw-maze sketch::instance)
     ;; UI
     (with-font *ui-font*
-      (text "algorithm: [a]ldous-broder [b]inary tree [h]unt and kill [s]idewinder [w]ilson"
+      (text "algorithm: [a]ldous-broder [b]inary tree [h]unt and kill [r]ecursive backtracker [s]idewinder [w]ilson"
             (+ (- *center-x*) 5) (- *center-y* 44))
       (text "display: [C]olor distances [I]nstant generation [L]ongest path [S]tats"
             (+ (- *center-x*) 5) (- *center-y* 24)))
@@ -311,6 +309,7 @@
     (:scancode-a (setf *generator* 'aldous-broder-generator))
     (:scancode-w (setf *generator* 'wilson-generator))
     (:scancode-h (setf *generator* 'hunt-and-kill-generator))
+    (:scancode-r (setf *generator* 'recursive-backtracker-generator))
     (:scancode-l (if *shift*
                    (toggle *show-longest*)
                    nil))
@@ -350,7 +349,7 @@
 (defun run-stats (&key (iterations 100) (size 15))
   (iterate
     (for algorithm :in '(binary-tree sidewinder aldous-broder wilson
-                         hunt-and-kill))
+                         hunt-and-kill recursive-backtracker))
     (iterate
       (repeat iterations)
       (for grid = (make-grid size size))
@@ -362,7 +361,9 @@
       (averaging time-single :into time-average)
       (finally
         (format t "~A (~D by ~:*~D)~%" algorithm size)
-        (format t "Dead Ends:        ~10,2F~%" dead-ends)
+        (format t "Dead Ends:        ~10,2F (~4,1F%)~%"
+                dead-ends
+                (* 100 (/ dead-ends (* size size))))
         (format t "Average Run Time: ~10,2Fms~%"
                 (/ time-average internal-time-units-per-second 1/1000))
         (format t "Total Run Time:   ~10,2Fms~%"
@@ -372,4 +373,5 @@
 
 
 ;;;; Run
+; (run-stats)
 ; (defparameter *demo* (make-instance 'demo))
