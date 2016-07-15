@@ -210,3 +210,39 @@
            `(for ,per = (- ,current-time ,previous-time)))
         ,(when (and (null var) (null per))
            `(finally (return ,since)))))))
+
+
+(defmacro-driver (FOR var IN-LISTS lists)
+  (let ((kwd (if generate 'generate 'for)))
+    (with-gensyms (list)
+      `(progn
+        (generate ,list :in (remove nil (list ,@lists)))
+        (,kwd ,var next (progn (when (null ,list)
+                                 (next ,list))
+                               (pop ,list)))))))
+
+
+(defun seq-done-p (seq len idx)
+  (if idx
+    (= idx len)
+    (null seq)))
+
+(defmacro-driver (FOR var IN-SEQUENCES seqs)
+  (let ((kwd (if generate 'generate 'for)))
+    (with-gensyms (seq len idx)
+      `(progn
+        (with ,len = nil)
+        (with ,idx = nil)
+        (generate ,seq :in (remove-if #'emptyp (list ,@seqs)))
+        (,kwd ,var next
+         (progn
+           (when (seq-done-p ,seq ,len ,idx)
+             (etypecase (next ,seq)
+               (cons (setf ,len nil ,idx nil))
+               (sequence (setf ,len (length ,seq)
+                               ,idx 0))))
+           (if ,idx
+             (prog1 (elt ,seq ,idx)
+               (incf ,idx))
+             (pop ,seq))))))))
+

@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:WITH-GENSYMS :ONCE-ONLY :CURRY :RCURRY :N-GRAMS) :ensure-package T :package "MAZES.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:WITH-GENSYMS :ONCE-ONLY :EMPTYP :CURRY :RCURRY :N-GRAMS) :ensure-package T :package "MAZES.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "MAZES.QUICKUTILS")
@@ -15,8 +15,8 @@
 (when (boundp '*utilities*)
   (setf *utilities* (union *utilities* '(:STRING-DESIGNATOR :WITH-GENSYMS
                                          :MAKE-GENSYM-LIST :ONCE-ONLY
-                                         :ENSURE-FUNCTION :CURRY :RCURRY :TAKE
-                                         :N-GRAMS))))
+                                         :NON-ZERO-P :EMPTYP :ENSURE-FUNCTION
+                                         :CURRY :RCURRY :TAKE :N-GRAMS))))
 
   (deftype string-designator ()
     "A string designator type. A string designator is either a string, a symbol,
@@ -108,6 +108,20 @@ Example:
                     names-and-forms gensyms)
                ,@forms)))))
   
+
+  (defun non-zero-p (n)
+    "Check if `n` is non-zero."
+    (not (zerop n)))
+  
+
+  (defgeneric emptyp (object)
+    (:documentation "Determine if `object` is empty.")
+    (:method ((x null)) t)
+    (:method ((x cons)) nil)
+    (:method ((x vector)) (zerop (length x))) ; STRING :< VECTOR
+    (:method ((x array)) (notany #'non-zero-p (array-dimensions x)))
+    (:method ((x hash-table)) (zerop (hash-table-count x))))
+  
 (eval-when (:compile-toplevel :load-toplevel :execute)
   ;;; To propagate return type and allow the compiler to eliminate the IF when
   ;;; it is known if the argument is function or not.
@@ -175,6 +189,7 @@ with and `arguments` to `function`."
                       :collect (subseq sequence i (+ i n))))))
   
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (export '(with-gensyms with-unique-names once-only curry rcurry n-grams)))
+  (export '(with-gensyms with-unique-names once-only emptyp curry rcurry
+            n-grams)))
 
 ;;;; END OF quickutils.lisp ;;;;

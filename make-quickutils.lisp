@@ -9,6 +9,7 @@
                ; :ensure-boolean
                :with-gensyms
                :once-only
+               :emptyp
                ; :iota
                :curry
                :rcurry

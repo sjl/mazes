@@ -34,6 +34,8 @@
     #:run-time
     #:since-start-into
     #:per-iteration-into
+    #:in-lists
+    #:in-sequences
     #:%)
   (:shadowing-import-from #:iterate
     #:in))
